@@ -13,8 +13,6 @@ import { ClientSnapshotRow } from "@/components/client-snapshot-row"
 import { ContentPipelineFlow } from "@/components/content-pipeline-flow"
 import { ContentVisibilityHero } from "@/components/content-visibility-hero"
 import type { ContentRecordListItem } from "@/lib/content-records"
-import { MonthView } from "@/components/month-view"
-import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
 
 // Get current month
 const getCurrentMonth = () => {
@@ -518,21 +516,8 @@ export default function ContentVisibilityPage() {
       )}
 
       {/* Add Content Modal */}
-      {/* {showAddModal && (
-        <AddContentModal 
-          onClose={() => setShowAddModal(false)}
-          initialData={editingRecord}
-          onSuccess={() => {
-            setShowAddModal(false)
-            setEditingRecord(null)
-            setRefreshKey((currentKey) => currentKey + 1)
-            setActiveTab("tracker")
-          }}
-        />
-      )} */}
-
       {showAddModal && (
-        <MonthlyContentPlannerModal
+        <AddContentModal
           onClose={() => setShowAddModal(false)}
           initialData={editingRecord}
           onSuccess={() => {
