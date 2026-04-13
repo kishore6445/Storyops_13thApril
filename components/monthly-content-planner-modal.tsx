@@ -132,11 +132,14 @@ export function MonthlyContentPlannerModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-4 border-b border-purple-200 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Monthly Content Plan</h2>
+        <div className="sticky top-0 bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-4 border-b-2 border-emerald-300 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Monthly Content Planner</h2>
+            <p className="text-sm text-slate-600 mt-1">Plan all your content for the month in one go</p>
+          </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-purple-200 rounded-lg transition-colors"
+            className="p-1 hover:bg-emerald-200 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-slate-600" />
           </button>
@@ -154,7 +157,7 @@ export function MonthlyContentPlannerModal({
               <select
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 required
               >
                 <option value="">Select a client</option>
@@ -174,7 +177,7 @@ export function MonthlyContentPlannerModal({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {months.map((month) => (
                   <option key={month.value} value={month.value}>
@@ -200,7 +203,7 @@ export function MonthlyContentPlannerModal({
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-700">Content Plan</h3>
-              <div className="text-sm font-medium text-purple-600">
+              <div className="text-sm font-medium text-emerald-600">
                 Total Items: <span className="text-lg font-bold">{totalItems}</span>
               </div>
             </div>
@@ -246,9 +249,9 @@ export function MonthlyContentPlannerModal({
                           <button
                             type="button"
                             onClick={() => handleQuantityChange(platform, contentType, 1)}
-                            className="p-1 hover:bg-purple-100 rounded transition-colors"
+                            className="p-1 hover:bg-emerald-100 rounded transition-colors"
                           >
-                            <Plus className="w-4 h-4 text-purple-600" />
+                            <Plus className="w-4 h-4 text-emerald-600" />
                           </button>
                         </div>
                       )
@@ -265,7 +268,7 @@ export function MonthlyContentPlannerModal({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
               rows={3}
               placeholder="Any notes about this monthly plan..."
             />
@@ -282,7 +285,7 @@ export function MonthlyContentPlannerModal({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg font-medium transition-colors"
+              className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-medium transition-colors"
             >
               Create Monthly Plan
             </button>
