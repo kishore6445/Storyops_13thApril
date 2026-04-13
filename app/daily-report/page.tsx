@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { QuickAddFromTimer } from "@/components/quick-add-from-timer"
 import { formatTime } from "@/lib/timer-service"
 import { BreadcrumbTrail } from "@/components/breadcrumb-trail"
 
@@ -54,6 +53,7 @@ export default function DailyReportPage() {
   const [trackedHours, setTrackedHours] = useState(0)
   const [todaySessions, setTodaySessions] = useState<any[]>([])
   const [loadingTodaySessions, setLoadingTodaySessions] = useState(true)
+  const [showAllPomodoroSessions, setShowAllPomodoroSessions] = useState(false)
 
   const loadTodaySessions = useCallback(() => {
     setLoadingTodaySessions(true)
@@ -86,6 +86,7 @@ export default function DailyReportPage() {
   useEffect(() => {
     setTodaySessions([])
     setTrackedHours(0)
+    setShowAllPomodoroSessions(false)
   }, [currentDate])
 
   // Fetch pomodoro sessions from DB for the selected date
@@ -391,18 +392,6 @@ export default function DailyReportPage() {
     setShowSubmitModal(false)
   }
 
-  const handleAddFromTimer = (taskId: string, hours: number, clientName: string, sprintName: string, taskTitle: string) => {
-    const newEntry: TimeEntry = {
-      id: Date.now().toString(),
-      client: clientName,
-      sprint: sprintName,
-      task: taskTitle,
-      hours: hours,
-      description: `Tracked via Pomodoro timer - ${hours} hours logged`,
-    }
-    setEntries([...entries, newEntry])
-  }
-
   const filteredSprints = sprints
   const filteredTasks = selectedSprintId
     ? (sprints.find(s => s.id === selectedSprintId)?.tasks || [])
@@ -514,7 +503,7 @@ export default function DailyReportPage() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
-                  {todaySessions.slice(0, 3).map((session, idx) => (
+                  {(showAllPomodoroSessions ? todaySessions : todaySessions.slice(0, 3)).map((session, idx) => (
                     <div key={session.id} className="bg-white rounded-lg p-3 border border-green-100 hover:border-green-300 transition-colors">
                       <div className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Session {idx + 1}</div>
                       <div className="text-sm font-mono font-bold text-gray-800">{formatTime(session.duration_seconds || 0)}</div>
@@ -524,13 +513,17 @@ export default function DailyReportPage() {
                       </div>
                     </div>
                   ))}
-                  {todaySessions.length > 3 && (
-                    <div className="bg-white rounded-lg p-3 border border-green-100 flex items-center justify-center">
+                  {todaySessions.length > 3 && !showAllPomodoroSessions && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllPomodoroSessions(true)}
+                      className="bg-white rounded-lg p-3 border border-green-100 hover:border-green-300 transition-colors flex items-center justify-center"
+                    >
                       <div className="text-center">
                         <div className="text-2xl font-black text-green-600">+{todaySessions.length - 3}</div>
                         <p className="text-xs text-gray-600 mt-1">More sessions</p>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
                 
@@ -538,7 +531,16 @@ export default function DailyReportPage() {
                   <p className="text-xs text-green-600 flex items-center gap-1">
                     <span>💡</span> Use these tracked sessions as a reference when filling your time entries
                   </p>
-                  <div className="text-right">
+                  <div className="text-right flex items-center gap-3">
+                    {todaySessions.length > 3 && showAllPomodoroSessions && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllPomodoroSessions(false)}
+                        className="text-xs font-medium text-green-700 hover:text-green-900"
+                      >
+                        Show less
+                      </button>
+                    )}
                     <div className="text-sm font-mono font-bold text-green-700">{trackedHours.toFixed(2)}h total</div>
                   </div>
                 </div>
@@ -813,12 +815,6 @@ export default function DailyReportPage() {
 
             {/* Entries List */}
             <div className="space-y-3">
-              {/* Quick Add from Timer */}
-              {currentDate === new Date().toISOString().split("T")[0] && trackedHours > 0 && (
-                <div className="mb-6">
-                  <QuickAddFromTimer onAddEntry={handleAddFromTimer} />
-                </div>
-              )}
               {entries.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-12 text-center">
                   <Clock className="w-12 h-12 text-[#D1D5DB] mx-auto mb-3 opacity-50" />
