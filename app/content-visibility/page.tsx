@@ -13,6 +13,8 @@ import { ClientSnapshotRow } from "@/components/client-snapshot-row"
 import { ContentPipelineFlow } from "@/components/content-pipeline-flow"
 import { ContentVisibilityHero } from "@/components/content-visibility-hero"
 import type { ContentRecordListItem } from "@/lib/content-records"
+import { MonthView } from "@/components/month-view"
+import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
 
 // Get current month
 const getCurrentMonth = () => {
@@ -199,7 +201,7 @@ export default function ContentVisibilityPage() {
     const insights = []
     const targetCount = totals.planned // Using planned as the target
     const productionDone = totals.scheduled - totals.published
-    
+
     // Shortfall check
     if (targetCount > 0 && totals.published < Math.floor(targetCount * 0.7)) {
       const gap = targetCount - totals.published
@@ -240,7 +242,7 @@ export default function ContentVisibilityPage() {
   const generatePlatformMetrics = () => {
     try {
       const PLATFORMS = ["Instagram", "LinkedIn", "YouTube", "Blog", "Facebook", "Email", "TikTok", "Twitter/X", "Website"]
-      
+
       // Initialize platform counts
       const platformCounts: Record<string, { achieved: number; target: number }> = {}
       PLATFORMS.forEach(platform => {
@@ -259,13 +261,13 @@ export default function ContentVisibilityPage() {
 
       // Calculate targets - divide total planned by number of active platforms
       const activePlatforms = Object.keys(platformCounts).filter(p => platformCounts[p].achieved > 0)
-      
+
       if (activePlatforms.length === 0) {
         return []
       }
 
       const targetsPerPlatform = Math.ceil(totals.planned / activePlatforms.length)
-      
+
       activePlatforms.forEach(platform => {
         platformCounts[platform].target = Math.max(targetsPerPlatform, 1)
       })
@@ -287,17 +289,17 @@ export default function ContentVisibilityPage() {
   const generateClientSnapshots = () => {
     try {
       if (selectedClient !== "All Clients") return []
-      
+
       return displayClients.slice(0, 5).map((client) => ({
         id: client.id,
         name: client.name,
         published: client.published,
         target: client.planned,
-        status: client.published >= Math.floor(client.planned * 0.7) 
-          ? "on-track" 
-          : client.published >= Math.floor(client.planned * 0.4) 
-          ? "needs-attention" 
-          : "at-risk",
+        status: client.published >= Math.floor(client.planned * 0.7)
+          ? "on-track"
+          : client.published >= Math.floor(client.planned * 0.4)
+            ? "needs-attention"
+            : "at-risk",
       }))
     } catch (error) {
       console.error("[v0] Error generating client snapshots:", error)
@@ -320,7 +322,7 @@ export default function ContentVisibilityPage() {
           <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
             <Download className="w-5 h-5" />
           </button>
-          <button 
+          <button
             onClick={() => {
               setEditingRecord(null)
               setShowAddModal(true)
@@ -337,7 +339,7 @@ export default function ContentVisibilityPage() {
       <div className="mb-6 flex gap-4">
         <div>
           <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Month</label>
-          <select 
+          <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
@@ -352,7 +354,7 @@ export default function ContentVisibilityPage() {
 
         <div>
           <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Client</label>
-          <select 
+          <select
             value={selectedClient}
             onChange={(e) => setSelectedClient(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
@@ -493,7 +495,7 @@ export default function ContentVisibilityPage() {
 
       {activeTab === "calendar" && (
         <div key="calendar-tab">
-          <ContentCalendarView 
+          <ContentCalendarView
             clientName={selectedClient === "All Clients" ? null : selectedClient}
             selectedMonth={selectedMonth}
             refreshKey={refreshKey}
@@ -516,8 +518,21 @@ export default function ContentVisibilityPage() {
       )}
 
       {/* Add Content Modal */}
-      {showAddModal && (
+      {/* {showAddModal && (
         <AddContentModal 
+          onClose={() => setShowAddModal(false)}
+          initialData={editingRecord}
+          onSuccess={() => {
+            setShowAddModal(false)
+            setEditingRecord(null)
+            setRefreshKey((currentKey) => currentKey + 1)
+            setActiveTab("tracker")
+          }}
+        />
+      )} */}
+
+      {showAddModal && (
+        <MonthlyContentPlannerModal
           onClose={() => setShowAddModal(false)}
           initialData={editingRecord}
           onSuccess={() => {
