@@ -1,19 +1,39 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Download, Upload } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Download, Upload, Calendar } from "lucide-react"
 import ContentVisibilityTable from "@/components/content-visibility-table"
 import AddContentModal from "@/components/add-content-modal-cv"
+import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
 import type { ContentRecordListItem } from "@/lib/content-records"
 
 export default function ContentTrackerPage() {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingRecord, setEditingRecord] = useState<ContentRecordListItem | null>(null)
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([])
+  const [isLoadingClients, setIsLoadingClients] = useState(true)
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await fetch("/api/clients")
+        if (response.ok) {
+          const data = await response.json()
+          setClients(data.clients || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch clients:", error)
+      } finally {
+        setIsLoadingClients(false)
+      }
+    }
+    fetchClients()
+  }, [])
 
   return (
     <div className="w-full max-w-7xl">
-      {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Content Tracker</h1>
@@ -25,6 +45,14 @@ export default function ContentTrackerPage() {
           </button>
           <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
             <Download className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setShowMonthlyModal(true)}
+            className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-sm transition-colors"
+            title="Plan monthly content"
+          >
+            <Calendar className="w-4 h-4 inline mr-2" />
+            Monthly Plan
           </button>
           <button 
             onClick={() => setShowAddModal(true)}
@@ -54,6 +82,35 @@ export default function ContentTrackerPage() {
             setEditingRecord(null)
             setRefreshKey((currentKey) => currentKey + 1)
           }}
+        />
+      )}
+
+      {/* Monthly Content Planner Modal */}
+      {showMonthlyModal && (
+        <MonthlyContentPlannerModal
+          isOpen={showMonthlyModal}
+          onClose={() => setShowMonthlyModal(false)}
+          onSubmit={async (plan) => {
+            try {
+              const response = await fetch("/api/content/monthly-plans", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(plan),
+              })
+              if (response.ok) {
+                setRefreshKey((currentKey) => currentKey + 1)
+                setShowMonthlyModal(false)
+              } else {
+                alert("Failed to create monthly plan")
+              }
+            } catch (error) {
+              console.error("Failed to submit monthly plan:", error)
+              alert("Error creating monthly plan")
+            }
+          }}
+          clients={clients}
+          platforms={[]}
+          contentTypes={[]}
         />
       )}
     </div>
