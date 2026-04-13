@@ -7,6 +7,7 @@ import { ContentClientPipeline } from "@/components/content-client-pipeline"
 import { ContentCalendarView } from "@/components/content-calendar-view"
 import ContentVisibilityTable from "@/components/content-visibility-table"
 import AddContentModal from "@/components/add-content-modal-cv"
+import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
 import { CommandCenterSummary } from "@/components/command-center-summary"
 import { BottleneckInsightRow } from "@/components/bottleneck-insight-row"
 import { ClientSnapshotRow } from "@/components/client-snapshot-row"
@@ -52,6 +53,7 @@ const TABS = [
 
 export default function ContentVisibilityPage() {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
   const [selectedClient, setSelectedClient] = useState("All Clients")
   const [activeTab, setActiveTab] = useState("pipeline")
@@ -321,10 +323,7 @@ export default function ContentVisibilityPage() {
             <Download className="w-5 h-5" />
           </button>
           <button
-            onClick={() => {
-              setEditingRecord(null)
-              setShowAddModal(true)
-            }}
+            onClick={() => setShowMonthlyModal(true)}
             className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
           >
             <Plus className="w-4 h-4 inline mr-2" />
@@ -497,7 +496,7 @@ export default function ContentVisibilityPage() {
             clientName={selectedClient === "All Clients" ? null : selectedClient}
             selectedMonth={selectedMonth}
             refreshKey={refreshKey}
-            onCreatePost={() => setShowAddModal(true)}
+            onCreatePost={() => setShowMonthlyModal(true)}
           />
         </div>
       )}
@@ -515,7 +514,7 @@ export default function ContentVisibilityPage() {
         </div>
       )}
 
-      {/* Add Content Modal */}
+      {/* Edit Modal - only for editing existing individual records */}
       {showAddModal && (
         <AddContentModal
           onClose={() => setShowAddModal(false)}
@@ -526,6 +525,33 @@ export default function ContentVisibilityPage() {
             setRefreshKey((currentKey) => currentKey + 1)
             setActiveTab("tracker")
           }}
+        />
+      )}
+
+      {/* Monthly Content Planner Modal - for bulk planning */}
+      {showMonthlyModal && (
+        <MonthlyContentPlannerModal
+          isOpen={showMonthlyModal}
+          onClose={() => setShowMonthlyModal(false)}
+          onSubmit={async (plan) => {
+            try {
+              const response = await fetch("/api/content/monthly-plans", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(plan),
+              })
+              if (response.ok) {
+                setRefreshKey((currentKey) => currentKey + 1)
+                setShowMonthlyModal(false)
+              } else {
+                alert("Failed to create monthly plan")
+              }
+            } catch (error) {
+              console.error("Failed to submit monthly plan:", error)
+              alert("Error creating monthly plan")
+            }
+          }}
+          clients={clients}
         />
       )}
     </div>
