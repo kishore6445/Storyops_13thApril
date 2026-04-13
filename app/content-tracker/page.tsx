@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Download, Upload, Calendar } from "lucide-react"
+import { Plus, Download, Upload } from "lucide-react"
 import ContentVisibilityTable from "@/components/content-visibility-table"
 import AddContentModal from "@/components/add-content-modal-cv"
 import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
 import type { ContentRecordListItem } from "@/lib/content-records"
 
 export default function ContentTrackerPage() {
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showMonthlyModal, setShowMonthlyModal] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingRecord, setEditingRecord] = useState<ContentRecordListItem | null>(null)
@@ -48,14 +48,6 @@ export default function ContentTrackerPage() {
           </button>
           <button 
             onClick={() => setShowMonthlyModal(true)}
-            className="px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-sm transition-colors"
-            title="Plan monthly content"
-          >
-            <Calendar className="w-4 h-4 inline mr-2" />
-            Monthly Plan
-          </button>
-          <button 
-            onClick={() => setShowAddModal(true)}
             className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
           >
             <Plus className="w-4 h-4 inline mr-2" />
@@ -68,24 +60,24 @@ export default function ContentTrackerPage() {
         refreshKey={refreshKey}
         onEdit={(record) => {
           setEditingRecord(record)
-          setShowAddModal(true)
+          setShowEditModal(true)
         }}
       />
 
-      {/* Add Content Modal */}
-      {showAddModal && (
+      {/* Edit Content Modal - for editing individual records */}
+      {showEditModal && (
         <AddContentModal 
-          onClose={() => setShowAddModal(false)}
+          onClose={() => setShowEditModal(false)}
           initialData={editingRecord}
           onSuccess={() => {
-            setShowAddModal(false)
+            setShowEditModal(false)
             setEditingRecord(null)
             setRefreshKey((currentKey) => currentKey + 1)
           }}
         />
       )}
 
-      {/* Monthly Content Planner Modal */}
+      {/* Monthly Content Planner Modal - for bulk planning */}
       {showMonthlyModal && (
         <MonthlyContentPlannerModal
           isOpen={showMonthlyModal}
