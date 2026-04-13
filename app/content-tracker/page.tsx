@@ -101,8 +101,6 @@ export default function ContentTrackerPage() {
             }
           }}
           clients={clients}
-          platforms={[]}
-          contentTypes={[]}
         />
       )}
     </div>
