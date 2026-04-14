@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Search, AlertCircle, CheckCircle2, Clock, User } from "lucide-react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
+import { TaskModalWithPKR } from "@/components/task-modal-with-pkr"
 
 interface Task {
   id: string
@@ -37,6 +38,8 @@ export function TeamAnalyticsDashboard() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<"all" | "overdue" | "due-soon" | "completed">("all")
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [showTaskModal, setShowTaskModal] = useState(false)
 
   const { data: analyticsData } = useSWR("/api/team/analytics", fetcher)
   const teamMembers: TeamMember[] = analyticsData?.teamMembers || []
@@ -97,7 +100,13 @@ export function TeamAnalyticsDashboard() {
     const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"
     
     return (
-      <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
+      <button
+        onClick={() => {
+          setSelectedTask(task)
+          setShowTaskModal(true)
+        }}
+        className="w-full text-left flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:shadow-sm"
+      >
         {/* Status indicator */}
         <div className="flex-shrink-0">
           {task.status === "done" ? (
@@ -136,7 +145,7 @@ export function TeamAnalyticsDashboard() {
             {taskStatus === "no-date" && "No date"}
           </p>
         </div>
-      </div>
+      </button>
     )
   }
 
@@ -340,6 +349,33 @@ export function TeamAnalyticsDashboard() {
           )}
         </div>
       </div>
+
+      {/* Task Edit Modal */}
+      {selectedTask && (
+        <TaskModalWithPKR
+          isOpen={showTaskModal}
+          onClose={() => {
+            setShowTaskModal(false)
+            setSelectedTask(null)
+          }}
+          onSave={async (taskData) => {
+            try {
+              const response = await fetch(`/api/tasks/${selectedTask.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(taskData),
+              })
+              if (response.ok) {
+                setShowTaskModal(false)
+                setSelectedTask(null)
+              }
+            } catch (error) {
+              console.error("[v0] Error saving task:", error)
+            }
+          }}
+          task={selectedTask}
+        />
+      )}
     </div>
   )
 }
