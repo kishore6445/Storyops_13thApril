@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Search, AlertCircle, CheckCircle2, Clock, User } from "lucide-react"
+import { Search, AlertCircle, CheckCircle2, Clock, User, Archive } from "lucide-react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
 import { TaskModalWithPKR } from "@/components/task-modal-with-pkr"
+import { ArchiveConfirmModal } from "@/components/archive-confirm-modal"
 
 interface Task {
   id: string
@@ -40,6 +41,9 @@ export function TeamAnalyticsDashboard() {
   const [statusFilter, setStatusFilter] = useState<"all" | "overdue" | "due-soon" | "completed">("all")
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [taskToArchive, setTaskToArchive] = useState<Task | null>(null)
+  const [isArchiving, setIsArchiving] = useState(false)
 
   const { data: analyticsData } = useSWR("/api/team/analytics", fetcher)
   const teamMembers: TeamMember[] = analyticsData?.teamMembers || []
@@ -60,6 +64,27 @@ export function TeamAnalyticsDashboard() {
     if (daysUntilDue === 0) return "due-today"
     if (daysUntilDue <= 3) return "due-soon"
     return "on-track"
+  }
+
+  // Handle archive action
+  const handleArchiveTask = async () => {
+    if (!taskToArchive) return
+    setIsArchiving(true)
+    try {
+      const response = await fetch("/api/tasks/archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: taskToArchive.id, action: "archive" }),
+      })
+      if (response.ok) {
+        setShowArchiveModal(false)
+        setTaskToArchive(null)
+      }
+    } catch (error) {
+      console.error("[v0] Error archiving task:", error)
+    } finally {
+      setIsArchiving(false)
+    }
   }
 
   // Filter members by search
@@ -100,13 +125,7 @@ export function TeamAnalyticsDashboard() {
     const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"
     
     return (
-      <button
-        onClick={() => {
-          setSelectedTask(task)
-          setShowTaskModal(true)
-        }}
-        className="w-full text-left flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:shadow-sm"
-      >
+      <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:shadow-sm group">
         {/* Status indicator */}
         <div className="flex-shrink-0">
           {task.status === "done" ? (
@@ -120,11 +139,17 @@ export function TeamAnalyticsDashboard() {
           )}
         </div>
 
-        {/* Task info */}
-        <div className="flex-1 min-w-0">
+        {/* Task info - clickable */}
+        <button
+          onClick={() => {
+            setSelectedTask(task)
+            setShowTaskModal(true)
+          }}
+          className="flex-1 min-w-0 text-left hover:opacity-75 transition-opacity"
+        >
           <p className="font-medium text-gray-900 truncate text-sm">{task.title}</p>
           <p className="text-xs text-gray-500">{task.task_id || task.id}</p>
-        </div>
+        </button>
 
         {/* Due date with status badge */}
         <div className="flex-shrink-0 text-right">
@@ -145,7 +170,22 @@ export function TeamAnalyticsDashboard() {
             {taskStatus === "no-date" && "No date"}
           </p>
         </div>
-      </button>
+
+        {/* Archive button - shown on completed tasks */}
+        {task.status === "done" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setTaskToArchive(task)
+              setShowArchiveModal(true)
+            }}
+            className="flex-shrink-0 p-2 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded transition-all"
+            title="Archive task"
+          >
+            <Archive className="w-4 h-4 text-gray-600" />
+          </button>
+        )}
+      </div>
     )
   }
 
@@ -374,6 +414,20 @@ export function TeamAnalyticsDashboard() {
             }
           }}
           task={selectedTask}
+        />
+      )}
+
+      {/* Archive Confirmation Modal */}
+      {taskToArchive && (
+        <ArchiveConfirmModal
+          isOpen={showArchiveModal}
+          taskTitle={taskToArchive.title}
+          isLoading={isArchiving}
+          onConfirm={handleArchiveTask}
+          onCancel={() => {
+            setShowArchiveModal(false)
+            setTaskToArchive(null)
+          }}
         />
       )}
     </div>
