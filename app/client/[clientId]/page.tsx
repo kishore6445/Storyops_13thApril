@@ -91,6 +91,15 @@ export default function ClientPage({ params }: ClientPageProps) {
       }
       currentDate.setDate(currentDate.getDate() + 7)
     }
+    
+    // Add "Total Monthly" option at the beginning
+    weeks.unshift({
+      week: 0,
+      start: new Date(firstDay),
+      end: new Date(lastDay),
+      label: "Total Monthly",
+    })
+    
     setWeeks(weeks)
   }
 
@@ -109,19 +118,19 @@ export default function ClientPage({ params }: ClientPageProps) {
       weekEnd.setDate(weekEnd.getDate() + 5)
       
       if (now >= currentDate && now <= weekEnd) {
-        return weekNumber
+        return weekNumber + 1 // +1 because Total Monthly is at index 0
       }
       currentDate.setDate(currentDate.getDate() + 7)
       weekNumber++
     }
-    return 1
+    return 0 // Default to "Total Monthly"
   }
 
   const handleMonthChange = (newMonth: string) => {
     setSelectedMonth(newMonth)
     const [year, month] = newMonth.split('-').map(Number)
     generateWeeksForMonth(year, month)
-    setSelectedWeek(1)
+    setSelectedWeek(0) // Default to "Total Monthly"
   }
 
   useEffect(() => {
@@ -135,13 +144,13 @@ export default function ClientPage({ params }: ClientPageProps) {
   const contentRecords = contentData?.records || []
   const meetings = meetingsData?.meetings || []
 
-  // Filter tasks by selected week
-  const filteredTasks = selectedWeek && weeks.length > 0 
+  // Filter tasks by selected week or month
+  const filteredTasks = selectedWeek !== null && weeks.length > 0 
     ? tasks.filter(task => {
         if (!task.due_date) return false
         const dueDate = new Date(task.due_date)
-        const week = weeks[selectedWeek - 1]
-        return dueDate >= week.start && dueDate <= week.end
+        const selectedPeriod = weeks[selectedWeek]
+        return dueDate >= selectedPeriod.start && dueDate <= selectedPeriod.end
       })
     : tasks
 
@@ -191,14 +200,14 @@ export default function ClientPage({ params }: ClientPageProps) {
 
             {/* Week Dropdown */}
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-2">Week</label>
+              <label className="block text-xs font-medium text-slate-700 mb-2">Period</label>
               <select
-                value={selectedWeek || 1}
+                value={selectedWeek || 0}
                 onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {weeks.map(week => (
-                  <option key={week.week} value={week.week}>
+                {weeks.map((week, index) => (
+                  <option key={index} value={week.week}>
                     {week.label}
                   </option>
                 ))}
@@ -222,8 +231,8 @@ export default function ClientPage({ params }: ClientPageProps) {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900">Project Tasks</h2>
             <p className="text-sm text-slate-600 mt-1">
-              {selectedWeek && weeks.length > 0 
-                ? `Tasks for ${weeks[selectedWeek - 1].label}`
+              {selectedWeek !== null && weeks.length > 0 
+                ? `Tasks for ${weeks[selectedWeek].label}`
                 : 'All tasks assigned to your project across the team'}
             </p>
           </div>
