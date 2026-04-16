@@ -44,11 +44,32 @@ export function MeetingsMomCard({ meeting, onUpdate, onCreateActionItems, onCrea
   }
 
   const handleCopyAllMOM = () => {
+    const attendeesList = meeting.attendees
+      ?.map((a) => a.full_name)
+      .join(", ") || "Not specified"
+    
     const decisions = formData.keyDecisions
       .filter((d) => d.trim())
       .map((d) => `• ${d}`)
       .join("\n")
-    const momText = `📋 Minutes of Meeting - ${meeting.client_id}\n\n📝 Summary:\n${formData.summary}\n\n✅ Key Actions:\n${decisions}`
+    
+    const momText = `📋 *MINUTES OF MEETING*
+
+*Meeting Date:* ${meeting.date}
+*Time:* ${meeting.time}
+
+*Attendees:*
+${attendeesList}
+
+*Summary:*
+${formData.summary || "No summary provided"}
+
+*Action Items:*
+${decisions || "No action items"}
+
+---
+Shared via StoryOps`
+    
     handleCopyToClipboard(momText)
   }
 
@@ -270,7 +291,7 @@ export function MeetingsMomCard({ meeting, onUpdate, onCreateActionItems, onCrea
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 text-gray-900 hover:bg-gray-50 font-medium rounded-lg transition-colors"
             >
               <Copy className="w-4 h-4" />
-              Copy
+              Copy for WhatsApp
             </button>
             {onAddToKnowledgeBase && (
               <button
