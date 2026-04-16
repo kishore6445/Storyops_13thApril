@@ -1,16 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Briefcase, ArrowRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Briefcase, ArrowRight, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import useSWR from "swr"
-
-const fetcher = (url: string) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null
-  return fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  }).then((res) => res.json())
-}
 
 interface Client {
   id: string
@@ -23,9 +15,38 @@ interface Client {
 
 export default function ClientDashboardsPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { data: clientsData, isLoading } = useSWR("/api/clients", fetcher)
+  const [clients, setClients] = useState<Client[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const clients: Client[] = clientsData?.clients || []
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const token = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null
+        
+        const response = await fetch("/api/clients", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch clients: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log("[v0] Clients fetched:", data)
+        setClients(data.clients || [])
+      } catch (err) {
+        console.error("[v0] Error fetching clients:", err)
+        setError(err instanceof Error ? err.message : "Failed to load clients")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchClients()
+  }, [])
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,6 +76,14 @@ export default function ClientDashboardsPage() {
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
         {/* Loading State */}
         {isLoading && (
           <div className="text-center py-12">
@@ -64,12 +93,15 @@ export default function ClientDashboardsPage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredClients.length === 0 && (
+        {!isLoading && filteredClients.length === 0 && !error && (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600 text-lg">
               {searchQuery ? "No clients match your search" : "No clients found"}
             </p>
+            {!searchQuery && (
+              <p className="text-gray-500 text-sm mt-2">Create your first client to get started</p>
+            )}
           </div>
         )}
 
