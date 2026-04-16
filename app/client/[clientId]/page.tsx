@@ -174,6 +174,7 @@ export default function ClientPage({ params }: ClientPageProps) {
       <ClientHeader 
         clientName={clientName} 
         shareUrl={shareUrl}
+        clientId={clientId}
       />
 
       {/* Main Content */}
