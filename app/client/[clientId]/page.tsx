@@ -280,9 +280,123 @@ export default function ClientPage({ params }: { params: { clientId: string } })
           </div>
         </div>
 
-        {/* Deliverables Section */}
+        {/* Accountability Section - Planned vs Completed */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Project Deliverables</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {selectedWeek === "all" ? "Monthly Accountability" : "Weekly Accountability"}
+          </h2>
+          <p className="text-gray-600 text-sm mb-6">
+            {selectedWeek === "all" 
+              ? "Complete monthly overview of planned and completed deliverables"
+              : "Track planned vs completed work for this specific week"}
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Planned Work */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Planned Work</h3>
+                  <p className="text-sm text-gray-600">Tasks assigned for this period</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Sprint Tasks</p>
+                    <span className="text-2xl font-bold text-blue-600">12</span>
+                  </div>
+                  <p className="text-sm text-gray-600">Total planned deliverables</p>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border-l-4 border-indigo-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Content Pieces</p>
+                    <span className="text-2xl font-bold text-indigo-600">6</span>
+                  </div>
+                  <p className="text-sm text-gray-600">Social media & blog posts</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-l-4 border-purple-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Production Items</p>
+                    <span className="text-2xl font-bold text-purple-600">4</span>
+                  </div>
+                  <p className="text-sm text-gray-600">Design, video, copywriting</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Completed Work */}
+            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg border-2 border-emerald-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Completed Work</h3>
+                  <p className="text-sm text-gray-600">Tasks finished this period</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-4 border-l-4 border-emerald-500">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Sprint Tasks</p>
+                    <span className="text-2xl font-bold text-emerald-600">10</span>
+                  </div>
+                  <p className="text-sm text-gray-600">83% completion rate</p>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 border-l-4 border-teal-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Content Published</p>
+                    <span className="text-2xl font-bold text-teal-600">4</span>
+                  </div>
+                  <p className="text-sm text-gray-600">67% of planned content</p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-l-4 border-green-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <p className="font-semibold text-gray-900">Production Done</p>
+                    <span className="text-2xl font-bold text-green-600">3</span>
+                  </div>
+                  <p className="text-sm text-gray-600">75% of production items</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-6">
+            <h4 className="font-semibold text-gray-900 mb-4">Accountability Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Overall Completion</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "81%" }}></div>
+                  </div>
+                  <span className="font-bold text-gray-900">81%</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">On-Time Delivery</p>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">92% delivered on time</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Pending Items</p>
+                <p className="text-2xl font-bold text-blue-600">2 tasks in progress</p>
+              </div>
+            </div>
+          </div>
+        </div>
           <div className="space-y-3">
             {dummyTasks.map((task) => (
               <div key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
