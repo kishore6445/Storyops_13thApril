@@ -71,14 +71,20 @@ export function TeamAnalyticsDashboard() {
     if (!taskToArchive) return
     setIsArchiving(true)
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null
       const response = await fetch("/api/tasks/archive", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ taskId: taskToArchive.id, action: "archive" }),
       })
       if (response.ok) {
         setShowArchiveModal(false)
         setTaskToArchive(null)
+      } else {
+        console.error("[v0] Archive failed with status:", response.status)
       }
     } catch (error) {
       console.error("[v0] Error archiving task:", error)
