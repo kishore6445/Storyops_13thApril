@@ -35,6 +35,7 @@ import {
   Workflow,
   Clock,
   Archive,
+  Briefcase,
 } from "lucide-react"
 
 const primaryNav = [
@@ -174,6 +175,12 @@ const contentPlanning = [
     id: "content-tracker",
     name: "Content Tracker",
     icon: CheckSquare,
+  },
+  {
+    id: "client-dashboards",
+    name: "Client Dashboards",
+    icon: Briefcase,
+    href: "/client-dashboards",
   },
 ]
 

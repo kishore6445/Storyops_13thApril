@@ -1,0 +1,133 @@
+"use client"
+
+import { useState } from "react"
+import { Search, Briefcase, ArrowRight } from "lucide-react"
+import Link from "next/link"
+import useSWR from "swr"
+
+const fetcher = (url: string) => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null
+  return fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  }).then((res) => res.json())
+}
+
+interface Client {
+  id: string
+  name: string
+  email?: string
+  industry?: string
+  status?: string
+  taskCount?: number
+}
+
+export default function ClientDashboardsPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+  const { data: clientsData, isLoading } = useSWR("/api/clients", fetcher)
+
+  const clients: Client[] = clientsData?.clients || []
+
+  const filteredClients = clients.filter((client) =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (client.email && client.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  return (
+    <div className="w-full bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Client Dashboards</h1>
+          <p className="text-gray-600">Select a client to view their project dashboard and task status</p>
+        </div>
+
+        {/* Search */}
+        <div className="mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search clients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 mt-4">Loading clients...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && filteredClients.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">
+              {searchQuery ? "No clients match your search" : "No clients found"}
+            </p>
+          </div>
+        )}
+
+        {/* Clients Grid */}
+        {!isLoading && filteredClients.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClients.map((client) => (
+              <Link
+                key={client.id}
+                href={`/client/${client.id}`}
+                className="group bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <Briefcase className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                  </div>
+
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{client.name}</h3>
+                  {client.email && <p className="text-sm text-gray-600 mb-3">{client.email}</p>}
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {client.industry && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        {client.industry}
+                      </span>
+                    )}
+                    {client.status && (
+                      <span
+                        className={`px-3 py-1 text-xs rounded-full font-medium ${
+                          client.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {client.status}
+                      </span>
+                    )}
+                  </div>
+
+                  {client.taskCount !== undefined && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold text-gray-900">{client.taskCount}</span> active tasks
+                    </p>
+                  )}
+                </div>
+
+                <div className="px-6 py-3 bg-gray-50 group-hover:bg-blue-50 transition-colors flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600">View Dashboard</span>
+                  <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
