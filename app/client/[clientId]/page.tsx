@@ -167,7 +167,8 @@ const dummyReportData: ReportData = {
   `,
 }
 
-export default function ClientPage({ params }: { params: { clientId: string } }) {
+export default async function ClientPage({ params }: { params: Promise<{ clientId: string }> }) {
+  const { clientId } = await params
   const data = dummyReportData
 
   const publishedCount = data.contentPosts.filter((p) => p.status === "published").length
