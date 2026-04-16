@@ -51,6 +51,7 @@ import { ComprehensivePKRView } from "@/components/comprehensive-pkr-view"
 import { PKRAnalyticsDynamic } from "@/components/pkr-analytics-dynamic"
 import { TeamAnalyticsDashboard } from "@/components/team-analytics-dashboard"
 import { ClientAnalytics } from "@/components/client-analytics"
+import { ClientDashboardsView } from "@/components/client-dashboards-view"
 import { TrendingUp, Target } from "lucide-react"
 
 const clientsFetcher = (url: string) => {
@@ -245,6 +246,7 @@ export default function DashboardPage() {
               {currentPhase === "pkr-analytics" && <PKRAnalyticsDynamic />}
               {currentPhase === "team-analytics" && <TeamAnalyticsDashboard />}
               {currentPhase === "client-analytics" && <ClientAnalytics />}
+              {currentPhase === "client-dashboards" && <ClientDashboardsView />}
             </div>
           </main>
         </div>
