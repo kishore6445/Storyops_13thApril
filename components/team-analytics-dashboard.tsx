@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Search, AlertCircle, CheckCircle2, Clock, User, Archive } from "lucide-react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import { TaskModalWithPKR } from "@/components/task-modal-with-pkr"
 import { ArchiveConfirmModal } from "@/components/archive-confirm-modal"
 
@@ -45,6 +46,7 @@ export function TeamAnalyticsDashboard() {
   const [taskToArchive, setTaskToArchive] = useState<Task | null>(null)
   const [isArchiving, setIsArchiving] = useState(false)
 
+  const { toast } = useToast()
   const { data: analyticsData } = useSWR("/api/team/analytics", fetcher)
   const teamMembers: TeamMember[] = analyticsData?.teamMembers || []
 
@@ -81,12 +83,26 @@ export function TeamAnalyticsDashboard() {
         body: JSON.stringify({ taskId: taskToArchive.id, action: "archive" }),
       })
       if (response.ok) {
+        toast({
+          title: "Task archived",
+          description: `"${taskToArchive.title}" has been archived successfully.`,
+        })
         setShowArchiveModal(false)
         setTaskToArchive(null)
       } else {
+        toast({
+          title: "Archive failed",
+          description: "Failed to archive the task. Please try again.",
+          variant: "destructive",
+        })
         console.error("[v0] Archive failed with status:", response.status)
       }
     } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while archiving the task.",
+        variant: "destructive",
+      })
       console.error("[v0] Error archiving task:", error)
     } finally {
       setIsArchiving(false)
