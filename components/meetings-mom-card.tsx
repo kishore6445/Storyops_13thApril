@@ -44,19 +44,21 @@ export function MeetingsMomCard({ meeting, onUpdate, onCreateActionItems, onCrea
   }
 
   const handleCopyAllMOM = () => {
-    const attendeesList = meeting.attendees
-      ?.map((a) => a.full_name)
-      .join(", ") || "Not specified"
+    const attendeesList = meeting.attendees && meeting.attendees.length > 0
+      ? meeting.attendees.map((a) => a.full_name).join(", ")
+      : "Not specified"
     
-    const decisions = formData.keyDecisions
-      .filter((d) => d.trim())
-      .map((d) => `• ${d}`)
-      .join("\n")
+    const decisions = Array.isArray(formData.keyDecisions)
+      ? formData.keyDecisions
+          .filter((d) => d && d.trim())
+          .map((d) => `• ${d}`)
+          .join("\n")
+      : "No action items"
     
     const momText = `📋 *MINUTES OF MEETING*
 
-*Meeting Date:* ${meeting.date}
-*Time:* ${meeting.time}
+*Meeting Date:* ${meeting.date || "Not specified"}
+*Time:* ${meeting.time || "Not specified"}
 
 *Attendees:*
 ${attendeesList}
@@ -65,7 +67,7 @@ ${attendeesList}
 ${formData.summary || "No summary provided"}
 
 *Action Items:*
-${decisions || "No action items"}
+${decisions}
 
 ---
 Shared via StoryOps`
