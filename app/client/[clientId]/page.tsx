@@ -305,7 +305,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
                   className="w-full px-4 py-2 bg-blue-700 text-white rounded-lg border border-blue-500 focus:outline-none focus:border-white appearance-none cursor-pointer"
                 >
                   <option value="all" className="bg-blue-700">Monthly View</option>
-                  {generateWeeks.map(week => (
+                  {weeks.map(week => (
                     <option key={week.value} value={week.value} className="bg-blue-700">
                       {week.label}
                     </option>
