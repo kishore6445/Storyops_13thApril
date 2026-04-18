@@ -1,7 +1,7 @@
 "use client"
 
 import { CheckCircle2, Calendar, Users, BarChart3, Share2, FileText, MessageSquare, TrendingUp, ChevronDown } from "lucide-react"
-import { useState, useMemo } from "react"
+import { useState } from "react"
 
 const dummyClients = [
   { id: "1", name: "Rudrani" },
@@ -188,7 +188,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
   const selectedClient = dummyClients.find(c => c.id === selectedClientId) || dummyClients[0]
 
   // Generate weeks for month
-  const generateWeeks = useMemo(() => {
+  const generateWeeks = () => {
     const [year, month] = selectedMonth.split("-").map(Number)
     const firstDay = new Date(year, month - 1, 1)
     const lastDay = new Date(year, month, 0)
@@ -215,7 +215,9 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
       currentDate.setDate(currentDate.getDate() + 7)
     }
     return weeks
-  }, [selectedMonth])
+  }
+
+  const weeks = generateWeeks()
 
   const handleCopyLink = async () => {
     try {
