@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react"
 import { Search, Briefcase, ArrowRight, AlertCircle, Loader } from "lucide-react"
 import Link from "next/link"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 
 interface Client {
   id: string
@@ -58,7 +61,13 @@ export default function ClientDashboardsPage() {
   )
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-8">
+    <AuthGuard>
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <TopNav />
+          <main className="flex-1 overflow-auto bg-white">
+            <div className="w-full max-w-7xl mx-auto p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Client Dashboards</h1>
@@ -165,6 +174,11 @@ export default function ClientDashboardsPage() {
           ))}
         </div>
       )}
-    </div>
+            </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }

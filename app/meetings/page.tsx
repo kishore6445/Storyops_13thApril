@@ -4,6 +4,9 @@ import { useState } from "react"
 import { Plus, Copy, Share2, Clock, Users, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import useSWR from "swr"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 import { MeetingsScheduleForm } from "@/components/meetings-schedule-form"
 import { MeetingsList } from "@/components/meetings-list"
 import { MeetingsDetailsPanel } from "@/components/meetings-details-panel"
@@ -53,7 +56,13 @@ export default function MeetingsPage() {
   const [showCompleted, setShowCompleted] = useState(false)
 
   return (
-    <div className="min-h-screen bg-white">
+    <AuthGuard>
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <TopNav />
+          <main className="flex-1 overflow-auto">
+            <div className="min-h-screen bg-white">
       {/* Breadcrumbs */}
       <BreadcrumbTrail
         items={[
@@ -185,6 +194,11 @@ export default function MeetingsPage() {
           )}
         </div>
       </div>
-    </div>
+            </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }
