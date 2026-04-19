@@ -564,6 +564,7 @@ export default function ContentVisibilityPage() {
         />
       )}
             </div>
+          </div>
             </div>
           </main>
         </div>

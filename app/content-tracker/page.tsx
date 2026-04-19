@@ -113,6 +113,7 @@ export default function ContentTrackerPage() {
         />
       )}
             </div>
+          </div>
             </div>
           </main>
         </div>
