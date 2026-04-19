@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from "react"
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatTime } from "@/lib/timer-service"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 import { BreadcrumbTrail } from "@/components/breadcrumb-trail"
 
 interface TimeEntry {
@@ -417,7 +420,13 @@ export default function DailyReportPage() {
   }, [] as { name: string; hours: number }[])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F5F7] to-[#EFEFEF]">
+    <AuthGuard>
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <TopNav />
+          <main className="flex-1 overflow-auto">
+            <div className="min-h-screen bg-gradient-to-br from-[#F5F5F7] to-[#EFEFEF]">
       {/* Breadcrumbs */}
       <BreadcrumbTrail
         items={[
@@ -909,6 +918,11 @@ export default function DailyReportPage() {
           </div>
         </div>
       )}
-    </div>
+            </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }

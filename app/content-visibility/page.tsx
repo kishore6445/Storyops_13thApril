@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react"
 import { ChevronDown, Plus, Download, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 import { ContentClientPipeline } from "@/components/content-client-pipeline"
 import { ContentCalendarView } from "@/components/content-calendar-view"
 import ContentVisibilityTable from "@/components/content-visibility-table"
@@ -308,7 +311,13 @@ export default function ContentVisibilityPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl">
+    <AuthGuard>
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <TopNav />
+          <main className="flex-1 overflow-auto bg-white">
+            <div className="w-full max-w-7xl">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -554,7 +563,12 @@ export default function ContentVisibilityPage() {
           clients={clients}
         />
       )}
-    </div>
+            </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }
 

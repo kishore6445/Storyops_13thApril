@@ -2,6 +2,9 @@
 
 import { CheckCircle2, Calendar, Users, BarChart3, Share2, FileText, MessageSquare, TrendingUp, ChevronDown } from "lucide-react"
 import { useState } from "react"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 
 const dummyClients = [
   { id: "1", name: "Rudrani" },
@@ -234,7 +237,13 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
   const completionPercentage = Math.round((data.completedTasks / data.totalTasks) * 100)
 
   return (
-    <div className="min-h-screen bg-white">
+    <AuthGuard>
+      <div className="flex min-h-screen bg-slate-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <TopNav />
+          <main className="flex-1 overflow-auto">
+            <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
         <div className="max-w-6xl mx-auto px-6 py-12">
@@ -514,6 +523,11 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
           </p>
         </div>
       </div>
-    </div>
+            </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }
