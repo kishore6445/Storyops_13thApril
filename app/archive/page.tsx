@@ -210,6 +210,7 @@ export default function ArchivePage() {
             </div>
           </div>
         )}
+      </div>
             </div>
           </main>
         </div>

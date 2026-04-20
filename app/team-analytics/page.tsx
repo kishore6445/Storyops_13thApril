@@ -9,7 +9,7 @@ export default function TeamAnalyticsPage() {
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
-        <Sidebar />
+        <Sidebar currentPhase="team-analytics" onPhaseChange={() => {}} />
         <div className="flex-1 flex flex-col">
           <TopNav />
           <main className="flex-1 overflow-auto bg-white">

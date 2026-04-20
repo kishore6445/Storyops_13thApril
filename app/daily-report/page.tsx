@@ -422,7 +422,7 @@ export default function DailyReportPage() {
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-slate-50">
-        <Sidebar />
+        <Sidebar currentPhase="daily-report" onPhaseChange={() => {}} />
         <div className="flex-1 flex flex-col">
           <TopNav />
           <main className="flex-1 overflow-auto">
