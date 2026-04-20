@@ -318,258 +318,258 @@ export default function ContentVisibilityPage() {
           <TopNav />
           <main className="flex-1 overflow-auto bg-white">
             <div className="w-full max-w-7xl">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
-          <p className="text-sm text-gray-600 mt-2">Plan, schedule, and track content across all clients</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Upload">
-            <Upload className="w-5 h-5" />
-          </button>
-          <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setShowMonthlyModal(true)}
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
-          >
-            <Plus className="w-4 h-4 inline mr-2" />
-            Add Content
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6 flex gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Month</label>
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
-          >
-            {MONTHS.map((month) => (
-              <option key={month} value={month}>
-                {month.charAt(0).toUpperCase() + month.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Client</label>
-          <select
-            value={selectedClient}
-            onChange={(e) => setSelectedClient(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
-          >
-            {clientOptions.map((client) => (
-              <option key={client} value={client}>{client}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {pageError && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {pageError}
-        </div>
-      )}
-
-      {/* Tab Navigation */}
-      <div className="flex gap-1 mb-8 border-b border-gray-200">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-              activeTab === tab.id
-                ? "text-blue-600 border-b-blue-600"
-                : "text-gray-600 border-b-transparent hover:text-gray-900"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === "pipeline" && (
-        <div className="space-y-8">
-          {/* New Hero Component - 5 Second View */}
-          <ContentVisibilityHero
-            target={totals.planned}
-            published={totals.published}
-            scheduled={totals.scheduled}
-            productionDone={totals.productionDone}
-            insights={generateInsights()}
-            platformMetrics={generatePlatformMetrics()}
-            clientName={selectedClient === "All Clients" ? `All Clients - ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}` : selectedClient}
-            isAllClients={selectedClient === "All Clients"}
-          />
-
-          {/* Progressive Disclosure: Advanced Breakdown Toggle */}
-          <button
-            onClick={() => setShowAdvancedBreakdown(!showAdvancedBreakdown)}
-            className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
-          >
-            <ChevronDown
-              className={cn(
-                "w-4 h-4 transition-transform",
-                showAdvancedBreakdown ? "rotate-180" : ""
-              )}
-            />
-            View Advanced Pipeline Breakdown
-          </button>
-
-          {/* Advanced Pipeline Views - Hidden by Default */}
-          {showAdvancedBreakdown && (
-            <div className="space-y-6 pt-4 border-t border-gray-200">
-              {/* Content Pipeline Flow Visualization */}
-              <ContentPipelineFlow
-                target={totals.planned}
-                productionDone={totals.scheduled - totals.published}
-                scheduled={totals.scheduled}
-                published={totals.published}
-              />
-
-              {/* Client Snapshots - Only show when All Clients selected */}
-              {selectedClient === "All Clients" && (
-                <ClientSnapshotRow clients={generateClientSnapshots()} />
-              )}
-
-              {/* Pipeline Overview Stats */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Pipeline Statistics</h3>
-                <div className="grid grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium mb-1">Total Planned</p>
-                    <p className="text-2xl font-bold text-gray-900">{totals.planned}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium mb-1">Scheduled</p>
-                    <p className="text-2xl font-bold text-blue-600">{totals.scheduled}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium mb-1">Published</p>
-                    <p className="text-2xl font-bold text-green-600">{totals.published}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium mb-1">Gap</p>
-                    <p className="text-2xl font-bold text-red-600">{totals.planned - totals.published}</p>
-                  </div>
+              {/* Header */}
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+                  <p className="text-sm text-gray-600 mt-2">Plan, schedule, and track content across all clients</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Upload">
+                    <Upload className="w-5 h-5" />
+                  </button>
+                  <button className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="Download">
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setShowMonthlyModal(true)}
+                    className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors"
+                  >
+                    <Plus className="w-4 h-4 inline mr-2" />
+                    Add Content
+                  </button>
                 </div>
               </div>
 
-              {/* Client Pipeline */}
-              <div>
-                <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                  {selectedClient === "All Clients" ? "All Clients" : selectedClient} - {selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}
-                </h2>
-                <ContentClientPipeline
-                  clients={displayClients}
-                  loading={isLoading}
-                />
+              {/* Filters */}
+              <div className="mb-6 flex gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Month</label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
+                  >
+                    {MONTHS.map((month) => (
+                      <option key={month} value={month}>
+                        {month.charAt(0).toUpperCase() + month.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Client</label>
+                  <select
+                    value={selectedClient}
+                    onChange={(e) => setSelectedClient(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:border-gray-400 transition-colors"
+                  >
+                    {clientOptions.map((client) => (
+                      <option key={client} value={client}>{client}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
+
+              {pageError && (
+                <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {pageError}
+                </div>
+              )}
+
+              {/* Tab Navigation */}
+              <div className="flex gap-1 mb-8 border-b border-gray-200">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+                      activeTab === tab.id
+                        ? "text-blue-600 border-b-blue-600"
+                        : "text-gray-600 border-b-transparent hover:text-gray-900"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === "pipeline" && (
+                <div className="space-y-8">
+                  {/* New Hero Component - 5 Second View */}
+                  <ContentVisibilityHero
+                    target={totals.planned}
+                    published={totals.published}
+                    scheduled={totals.scheduled}
+                    productionDone={totals.productionDone}
+                    insights={generateInsights()}
+                    platformMetrics={generatePlatformMetrics()}
+                    clientName={selectedClient === "All Clients" ? `All Clients - ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}` : selectedClient}
+                    isAllClients={selectedClient === "All Clients"}
+                  />
+
+                  {/* Progressive Disclosure: Advanced Breakdown Toggle */}
+                  <button
+                    onClick={() => setShowAdvancedBreakdown(!showAdvancedBreakdown)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "w-4 h-4 transition-transform",
+                        showAdvancedBreakdown ? "rotate-180" : ""
+                      )}
+                    />
+                    View Advanced Pipeline Breakdown
+                  </button>
+
+                  {/* Advanced Pipeline Views - Hidden by Default */}
+                  {showAdvancedBreakdown && (
+                    <div className="space-y-6 pt-4 border-t border-gray-200">
+                      {/* Content Pipeline Flow Visualization */}
+                      <ContentPipelineFlow
+                        target={totals.planned}
+                        productionDone={totals.scheduled - totals.published}
+                        scheduled={totals.scheduled}
+                        published={totals.published}
+                      />
+
+                      {/* Client Snapshots - Only show when All Clients selected */}
+                      {selectedClient === "All Clients" && (
+                        <ClientSnapshotRow clients={generateClientSnapshots()} />
+                      )}
+
+                      {/* Pipeline Overview Stats */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                        <h3 className="font-semibold text-gray-900 mb-4">Pipeline Statistics</h3>
+                        <div className="grid grid-cols-4 gap-6">
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium mb-1">Total Planned</p>
+                            <p className="text-2xl font-bold text-gray-900">{totals.planned}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium mb-1">Scheduled</p>
+                            <p className="text-2xl font-bold text-blue-600">{totals.scheduled}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium mb-1">Published</p>
+                            <p className="text-2xl font-bold text-green-600">{totals.published}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 font-medium mb-1">Gap</p>
+                            <p className="text-2xl font-bold text-red-600">{totals.planned - totals.published}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Client Pipeline */}
+                      <div>
+                        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                          {selectedClient === "All Clients" ? "All Clients" : selectedClient} - {selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}
+                        </h2>
+                        <ContentClientPipeline
+                          clients={displayClients}
+                          loading={isLoading}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content Records Table */}
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
+                      Content Records
+                    </h2>
+                    <ContentVisibilityTable
+                      filters={{
+                        month: selectedMonth,
+                        client: selectedClient,
+                      }}
+                      refreshKey={refreshKey}
+                      onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
+                      onEdit={(record) => {
+                        setEditingRecord(record)
+                        setShowAddModal(true)
+                        setActiveTab("tracker")
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "calendar" && (
+                <div key="calendar-tab">
+                  <ContentCalendarView
+                    clientName={selectedClient === "All Clients" ? null : selectedClient}
+                    selectedMonth={selectedMonth}
+                    refreshKey={refreshKey}
+                    onCreatePost={() => setShowMonthlyModal(true)}
+                  />
+                </div>
+              )}
+
+              {activeTab === "tracker" && (
+                <div key="tracker-tab">
+                  <ContentVisibilityTable
+                    refreshKey={refreshKey}
+                    onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
+                    onEdit={(record) => {
+                      setEditingRecord(record)
+                      setShowAddModal(true)
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Edit Modal - only for editing existing individual records */}
+              {showAddModal && (
+                <AddContentModal
+                  onClose={() => setShowAddModal(false)}
+                  initialData={editingRecord}
+                  onSuccess={() => {
+                    setShowAddModal(false)
+                    setEditingRecord(null)
+                    setRefreshKey((currentKey) => currentKey + 1)
+                    setActiveTab("tracker")
+                  }}
+                />
+              )}
+
+              {/* Monthly Content Planner Modal - for bulk planning */}
+              {showMonthlyModal && (
+                <MonthlyContentPlannerModal
+                  isOpen={showMonthlyModal}
+                  onClose={() => setShowMonthlyModal(false)}
+                  onSubmit={async (plan) => {
+                    try {
+                      const response = await fetch("/api/content/monthly-plans", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(plan),
+                      })
+                      if (response.ok) {
+                        setRefreshKey((currentKey) => currentKey + 1)
+                        setShowMonthlyModal(false)
+                      } else {
+                        alert("Failed to create monthly plan")
+                      }
+                    } catch (error) {
+                      console.error("Failed to submit monthly plan:", error)
+                      alert("Error creating monthly plan")
+                    }
+                  }}
+                  clients={clients}
+                />
+              )}
             </div>
-          )}
-
-          {/* Content Records Table */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-              Content Records
-            </h2>
-            <ContentVisibilityTable
-              filters={{
-                month: selectedMonth,
-                client: selectedClient,
-              }}
-              refreshKey={refreshKey}
-              onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
-              onEdit={(record) => {
-                setEditingRecord(record)
-                setShowAddModal(true)
-                setActiveTab("tracker")
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {activeTab === "calendar" && (
-        <div key="calendar-tab">
-          <ContentCalendarView
-            clientName={selectedClient === "All Clients" ? null : selectedClient}
-            selectedMonth={selectedMonth}
-            refreshKey={refreshKey}
-            onCreatePost={() => setShowMonthlyModal(true)}
-          />
-        </div>
-      )}
-
-      {activeTab === "tracker" && (
-        <div key="tracker-tab">
-          <ContentVisibilityTable
-            refreshKey={refreshKey}
-            onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
-            onEdit={(record) => {
-              setEditingRecord(record)
-              setShowAddModal(true)
-            }}
-          />
-        </div>
-      )}
-
-      {/* Edit Modal - only for editing existing individual records */}
-      {showAddModal && (
-        <AddContentModal
-          onClose={() => setShowAddModal(false)}
-          initialData={editingRecord}
-          onSuccess={() => {
-            setShowAddModal(false)
-            setEditingRecord(null)
-            setRefreshKey((currentKey) => currentKey + 1)
-            setActiveTab("tracker")
-          }}
-        />
-      )}
-
-      {/* Monthly Content Planner Modal - for bulk planning */}
-      {showMonthlyModal && (
-        <MonthlyContentPlannerModal
-          isOpen={showMonthlyModal}
-          onClose={() => setShowMonthlyModal(false)}
-          onSubmit={async (plan) => {
-            try {
-              const response = await fetch("/api/content/monthly-plans", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(plan),
-              })
-              if (response.ok) {
-                setRefreshKey((currentKey) => currentKey + 1)
-                setShowMonthlyModal(false)
-              } else {
-                alert("Failed to create monthly plan")
-              }
-            } catch (error) {
-              console.error("Failed to submit monthly plan:", error)
-              alert("Error creating monthly plan")
-            }
-          }}
-          clients={clients}
-        />
-      )}
-            </div>
-          </div>
-            </div>
-          </main>
         </div>
       </div>
-    </AuthGuard>
+    </main>
+        </div >
+      </div >
+    </AuthGuard >
   )
 }
 
