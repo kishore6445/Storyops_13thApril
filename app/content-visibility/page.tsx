@@ -564,11 +564,10 @@ export default function ContentVisibilityPage() {
                 />
               )}
             </div>
-        </div>
-      </div>
-    </main>
-        </div >
-      // </div >
+        </div>   {/* closes inner content div */}
+      </main>
+    </div>       {/* closes flex column */ }
+      </div > {/* closes main layout */ }
     </AuthGuard >
   )
 }
