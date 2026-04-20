@@ -3,7 +3,7 @@
 import { CheckCircle2, Calendar, BarChart3, Share2, FileText, MessageSquare, TrendingUp, ChevronDown, Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import useSWR from "swr"
+import useSWR, { mutate } from "swr"
 import { AuthGuard } from "@/components/auth-guard"
 import { TopNav } from "@/components/top-nav"
 import { Sidebar } from "@/components/sidebar"
@@ -105,6 +105,12 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
 
   const handleClientChange = (id: string) => {
     setSelectedClientId(id)
+
+
+    // force SWR refresh immediately
+    mutate(`/api/client-report-card?clientId=${id}`)
+    mutate(`/api/tasks?clientId=${id}`)
+
     router.replace(`/client/${id}`)
   }
 
@@ -119,7 +125,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
   return (
     <AuthGuard>
       <div className="flex min-h-screen bg-white">
-        <Sidebar currentPhase="client-dashboards" onPhaseChange={() => {}} />
+        <Sidebar currentPhase="client-dashboards" onPhaseChange={() => { }} />
         <div className="flex-1 flex flex-col min-w-0">
           <TopNav />
           <main className="flex-1 overflow-auto">
@@ -275,24 +281,22 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
                         {campaigns.map((campaign: any) => (
                           <div
                             key={campaign.id}
-                            className={`p-4 rounded-lg border-l-4 flex items-start justify-between ${
-                              campaign.status === "completed"
-                                ? "bg-green-50 border-green-500"
-                                : campaign.status === "active"
+                            className={`p-4 rounded-lg border-l-4 flex items-start justify-between ${campaign.status === "completed"
+                              ? "bg-green-50 border-green-500"
+                              : campaign.status === "active"
                                 ? "bg-blue-50 border-blue-500"
                                 : "bg-yellow-50 border-yellow-400"
-                            }`}
+                              }`}
                           >
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
                                 <div
-                                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                                    campaign.status === "completed"
-                                      ? "bg-green-500"
-                                      : campaign.status === "active"
+                                  className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${campaign.status === "completed"
+                                    ? "bg-green-500"
+                                    : campaign.status === "active"
                                       ? "bg-blue-500"
                                       : "bg-yellow-500"
-                                  }`}
+                                    }`}
                                 >
                                   {campaign.status === "completed" ? (
                                     <CheckCircle2 className="w-3.5 h-3.5 text-white" />
@@ -309,13 +313,12 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
                               </div>
                             </div>
                             <span
-                              className={`px-2.5 py-1 rounded-full text-xs font-semibold ml-4 flex-shrink-0 capitalize ${
-                                campaign.status === "completed"
-                                  ? "bg-green-200 text-green-800"
-                                  : campaign.status === "active"
+                              className={`px-2.5 py-1 rounded-full text-xs font-semibold ml-4 flex-shrink-0 capitalize ${campaign.status === "completed"
+                                ? "bg-green-200 text-green-800"
+                                : campaign.status === "active"
                                   ? "bg-blue-200 text-blue-800"
                                   : "bg-yellow-200 text-yellow-800"
-                              }`}
+                                }`}
                             >
                               {campaign.status}
                             </span>
@@ -340,24 +343,22 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
                           return (
                             <div
                               key={post.id}
-                              className={`p-4 rounded-lg border flex items-start justify-between ${
-                                post.status === "published"
-                                  ? "border-green-200 bg-green-50"
-                                  : post.status === "scheduled"
+                              className={`p-4 rounded-lg border flex items-start justify-between ${post.status === "published"
+                                ? "border-green-200 bg-green-50"
+                                : post.status === "scheduled"
                                   ? "border-blue-200 bg-blue-50"
                                   : "border-gray-200 bg-gray-50"
-                              }`}
+                                }`}
                             >
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span
-                                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                      post.status === "published"
-                                        ? "bg-green-200 text-green-800"
-                                        : post.status === "scheduled"
+                                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${post.status === "published"
+                                      ? "bg-green-200 text-green-800"
+                                      : post.status === "scheduled"
                                         ? "bg-blue-200 text-blue-800"
                                         : "bg-gray-200 text-gray-800"
-                                    }`}
+                                      }`}
                                   >
                                     {platforms}
                                   </span>
@@ -366,21 +367,20 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
                                 <p className="text-xs text-gray-500 mt-0.5">
                                   {post.scheduled_date
                                     ? new Date(post.scheduled_date).toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                        year: "numeric",
-                                      })
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
                                     : ""}
                                 </p>
                               </div>
                               <span
-                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ml-4 flex-shrink-0 capitalize ${
-                                  post.status === "published"
-                                    ? "bg-green-200 text-green-800"
-                                    : post.status === "scheduled"
+                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ml-4 flex-shrink-0 capitalize ${post.status === "published"
+                                  ? "bg-green-200 text-green-800"
+                                  : post.status === "scheduled"
                                     ? "bg-blue-200 text-blue-800"
                                     : "bg-gray-200 text-gray-800"
-                                }`}
+                                  }`}
                               >
                                 {post.status}
                               </span>
