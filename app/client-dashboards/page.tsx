@@ -175,7 +175,6 @@ export default function ClientDashboardsPage() {
         </div>
       )}
             </div>
-            </div>
           </main>
         </div>
       </div>
