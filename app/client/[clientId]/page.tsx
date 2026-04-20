@@ -128,7 +128,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
         <Sidebar currentPhase="client-dashboards" onPhaseChange={() => { }} />
         <div className="fflex-1 flex flex-col overflow-hidden ml-[260px]">
           <TopNav />
-          <main className="flex-1 overflow-auto w-full">
+          <main className="flex-1 overflow-auto">
             {/* Header — constrained within the flex-1 column, not full viewport */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white w-full">
               <div className="px-6 py-10">
