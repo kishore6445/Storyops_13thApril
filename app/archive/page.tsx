@@ -4,6 +4,9 @@ import { useState } from "react"
 import { Search, Archive, RotateCcw, Trash2 } from "lucide-react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 
 interface ArchivedTask {
   id: string
@@ -94,7 +97,13 @@ export default function ArchivePage() {
   }
 
   return (
-    <div className="flex-1 overflow-auto p-8">
+    <AuthGuard>
+      <div className="min-h-screen bg-[#FAFBFC]">
+        <TopNav />
+        <div className="flex">
+          <Sidebar currentPhase="archive" onPhaseChange={() => {}} />
+          <main className="flex-1 ml-64 mt-16 [@media(max-width:768px)]:ml-20">
+            <div className="flex-1 overflow-auto p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -201,7 +210,10 @@ export default function ArchivePage() {
             </div>
           </div>
         )}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   )
 }

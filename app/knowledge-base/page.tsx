@@ -9,6 +9,9 @@ import { OutlineRendererEnhanced } from "@/components/kb-outline-renderer-enhanc
 import { KBPage, KBNode } from "@/lib/kb-types"
 import { flattenNodes, getNextNode, getPreviousNode, getFirstChild } from "@/lib/kb-navigation"
 import { useAuth } from "@/hooks/use-auth"
+import { AuthGuard } from "@/components/auth-guard"
+import { TopNav } from "@/components/top-nav"
+import { Sidebar } from "@/components/sidebar"
 import {
   createKBNode,
   updateKBNode,
@@ -434,7 +437,13 @@ export default function KnowledgeBasePage() {
   }, [rootNodes, searchQuery])
 
   return (
-    <div className="flex h-screen bg-white">
+    <AuthGuard>
+      <div className="min-h-screen bg-[#FAFBFC]">
+        <TopNav />
+        <div className="flex">
+          <Sidebar currentPhase="knowledge-base" onPhaseChange={() => {}} />
+          <main className="flex-1 ml-64 mt-16 [@media(max-width:768px)]:ml-20">
+            <div className="flex h-[calc(100vh-64px)] bg-white">
       {/* Sync Error Notification */}
       {syncError && (
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg z-50 max-w-xs">
@@ -636,6 +645,10 @@ export default function KnowledgeBasePage() {
           )}
         </div>
       </div>
-    </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
   )
 }

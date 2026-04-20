@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Plus, Download, Upload } from "lucide-react"
-import { AuthGuard } from "@/components/auth-guard"
-import { TopNav } from "@/components/top-nav"
-import { Sidebar } from "@/components/sidebar"
 import ContentVisibilityTable from "@/components/content-visibility-table"
 import AddContentModal from "@/components/add-content-modal-cv"
 import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
@@ -36,13 +33,7 @@ export default function ContentTrackerPage() {
   }, [])
 
   return (
-    <AuthGuard>
-      <div className="flex min-h-screen bg-slate-50">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <TopNav />
-          <main className="flex-1 overflow-auto bg-white">
-            <div className="w-full max-w-7xl">
+    <div className="w-full max-w-7xl">
 
               {/* Header */}
               <div className="mb-8 flex items-center justify-between">
@@ -110,10 +101,6 @@ export default function ContentTrackerPage() {
                 />
               )}
 
-            </div>
-          </main>
-        </div>
-      </div>
-    </AuthGuard>
+    </div>
   )
 }
