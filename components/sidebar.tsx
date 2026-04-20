@@ -429,7 +429,10 @@ export function Sidebar({ currentPhase, onPhaseChange }: SidebarProps) {
                     return (
                       <button
                         key={phase.id}
-                        onClick={() => onPhaseChange(phase.id)}
+                        onClick={() => {
+                          router.push("/")
+                          onPhaseChange(phase.id)
+                        }}
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium transition-all",
                           isActive 
@@ -556,7 +559,14 @@ export function Sidebar({ currentPhase, onPhaseChange }: SidebarProps) {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => onPhaseChange(item.id)}
+                        onClick={() => {
+                          if (item.href) {
+                            router.push(item.href)
+                          } else {
+                            router.push("/")
+                            onPhaseChange(item.id)
+                          }
+                        }}
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-2.5 rounded text-sm font-medium transition-all",
                           isActive 
