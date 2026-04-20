@@ -56,9 +56,15 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
   const { data: clientsData, isLoading: clientsLoading } = useSWR("/api/clients", fetcher)
   const clients: { id: string; name: string }[] = clientsData?.clients || []
 
-  // Fetch report card for selected client
+  // Fetch report card for selected client (campaigns + posts)
   const { data: reportData, isLoading: reportLoading } = useSWR(
     selectedClientId ? `/api/client-report-card?clientId=${selectedClientId}` : null,
+    fetcher
+  )
+
+  // Fetch tasks for selected client
+  const { data: tasksData, isLoading: tasksLoading } = useSWR(
+    selectedClientId ? `/api/tasks?clientId=${selectedClientId}` : null,
     fetcher
   )
 
@@ -68,12 +74,24 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
   const summary = reportData?.summary || {}
   const recentPosts: any[] = reportData?.recentPosts || []
   const campaigns: any[] = reportData?.campaigns || []
+  const allTasks: any[] = tasksData?.tasks || tasksData || []
 
-  const completedTasks = summary.completedCampaigns || 0
-  const totalTasks = summary.totalCampaigns || 0
+  // Filter tasks by selected month
+  const filteredTasks = allTasks.filter((t: any) => {
+    if (!t.due_date && !t.created_at) return true
+    const dateStr = t.due_date || t.created_at
+    const d = new Date(dateStr)
+    const taskMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    return taskMonth === selectedMonth
+  })
+
+  const completedTasks = filteredTasks.filter((t: any) => t.status === "completed" || t.status === "done").length
+  const totalTasks = filteredTasks.length
   const publishedCount = summary.publishedPosts || 0
   const scheduledCount = summary.scheduledPostsCount || 0
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+  const isLoading = reportLoading || tasksLoading
 
   const handleCopyLink = async () => {
     try {
