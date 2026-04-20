@@ -124,7 +124,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen bg-white w-full">
+      <div className="flex min-h-screen bg-white w-full overflow-hidden">
         <Sidebar currentPhase="client-dashboards" onPhaseChange={() => { }} />
         <div className="flex-1 flex flex-col min-w-0">
           <TopNav />
