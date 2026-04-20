@@ -126,7 +126,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
     <AuthGuard>
       <div className="flex min-h-screen bg-white w-full overflow-hidden">
         <Sidebar currentPhase="client-dashboards" onPhaseChange={() => { }} />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 w-0">
           <TopNav />
           <main className="flex-1 overflow-auto w-full">
             {/* Header — constrained within the flex-1 column, not full viewport */}
