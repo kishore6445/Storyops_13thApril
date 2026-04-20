@@ -130,7 +130,7 @@ export default function ClientReportPage({ params }: { params: { clientId: strin
           <TopNav />
           <main className="flex-1 overflow-auto w-full">
             {/* Header — constrained within the flex-1 column, not full viewport */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white w-full">
               <div className="px-6 py-10">
                 <div className="flex items-center justify-between mb-6">
                   <div>
