@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Task } from "./my-tasks-today"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, Circle, ChevronDown, Calendar, Archive } from "lucide-react"
+import { CheckCircle2, Circle, ChevronDown, Calendar, Archive, Copy } from "lucide-react"
 import { TaskTimer } from "./task-timer"
 
 interface KanbanColumn {
@@ -40,6 +40,13 @@ export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate,
   const [expandedDoneColumn, setExpandedDoneColumn] = useState(true)
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
   const [archivingId, setArchivingId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  const handleCopyTaskId = (taskId: string) => {
+    navigator.clipboard.writeText(taskId)
+    setCopiedId(taskId)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const handleArchiveTask = async (taskId: string) => {
     setArchivingId(taskId)
@@ -368,8 +375,20 @@ export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate,
                               )}
                             >
                               {/* Task Number - Small, muted, easily copyable */}
-                              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                {task.taskId || task.id.slice(0, 6).toUpperCase()}
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                  {task.taskId || task.id.slice(0, 6).toUpperCase()}
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCopyTaskId(task.taskId || task.id)
+                                  }}
+                                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                                  title="Copy task number"
+                                >
+                                  <Copy className={`w-3.5 h-3.5 ${copiedId === (task.taskId || task.id) ? "text-green-500" : "text-gray-400 hover:text-gray-600"}`} />
+                                </button>
                               </div>
 
                               {/* Client Name - Clear identifier */}
