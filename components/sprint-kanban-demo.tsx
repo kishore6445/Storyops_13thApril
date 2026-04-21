@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import useSWR from "swr"
-import { ChevronDown, Calendar, Users, Zap, AlertCircle, Plus, Edit2, Trash2, X, Inbox } from "lucide-react"
+import { ChevronDown, Calendar, Users, Zap, AlertCircle, Plus, Edit2, Trash2, X, Inbox, Archive } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useClient } from "@/contexts/client-context"
 
@@ -47,7 +47,7 @@ const KANBAN_COLUMNS = [
   { id: "done", title: "Done", color: "bg-green-50 border-green-200" },
 ]
 
-function SprintKanbanView({ sprint, tasks }: { sprint: DemoSprint; tasks: DemoTask[] }) {
+function SprintKanbanView({ sprint, tasks, onArchive }: { sprint: DemoSprint; tasks: DemoTask[]; onArchive?: (taskId: string) => void }) {
   const sprintTasks = tasks || []
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({
     todo: false,
@@ -55,6 +55,29 @@ function SprintKanbanView({ sprint, tasks }: { sprint: DemoSprint; tasks: DemoTa
     in_review: false,
     done: false,
   })
+  const [archivingId, setArchivingId] = useState<string | null>(null)
+
+  const handleArchive = async (taskId: string) => {
+    setArchivingId(taskId)
+    try {
+      const token = localStorage.getItem("sessionToken")
+      const res = await fetch("/api/tasks/archive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ taskId, action: "archive" }),
+      })
+      if (res.ok) {
+        onArchive?.(taskId)
+      }
+    } catch (err) {
+      console.error("[v0] Archive error:", err)
+    } finally {
+      setArchivingId(null)
+    }
+  }
 
   const toggleColumnExpand = (columnId: string) => {
     setExpandedColumns((prev) => ({
@@ -177,14 +200,27 @@ function SprintKanbanView({ sprint, tasks }: { sprint: DemoSprint; tasks: DemoTa
                           </h4>
 
                           {/* Due Date + Urgency Indicator */}
-                          <div className="flex items-center gap-2 text-xs text-[#86868B]">
-                            <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>{formatDateShort(task.dueDate)}</span>
-                            {urgencyInfo && (
-                              <div
-                                className={cn("w-2 h-2 rounded-full flex-shrink-0", urgencyInfo.color)}
-                                title={urgencyInfo.label}
-                              />
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs text-[#86868B]">
+                              <Calendar className="w-3 h-3 flex-shrink-0" />
+                              <span>{formatDateShort(task.dueDate)}</span>
+                              {urgencyInfo && (
+                                <div
+                                  className={cn("w-2 h-2 rounded-full flex-shrink-0", urgencyInfo.color)}
+                                  title={urgencyInfo.label}
+                                />
+                              )}
+                            </div>
+                            {column.id === "done" && (
+                              <button
+                                onClick={() => handleArchive(task.taskId || task.id)}
+                                disabled={archivingId === (task.taskId || task.id)}
+                                title="Move to Archive"
+                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-1.5 py-0.5 text-xs text-[#86868B] hover:text-[#FF9500] hover:bg-orange-50 rounded transition-all"
+                              >
+                                <Archive className="w-3 h-3" />
+                                <span>Archive</span>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -560,7 +596,7 @@ export function SprintKanbanDemo() {
                   {expandedSprint === sprint.id && (
                     <div className="px-4 py-4 border-t border-[#E5E5E7] bg-[#FAFBFC]">
                       <p className="text-xs text-[#86868B] font-medium mb-3">Kanban View</p>
-                      <SprintKanbanView sprint={sprint} tasks={sprintTasks} />
+                      <SprintKanbanView sprint={sprint} tasks={sprintTasks} onArchive={() => mutateTasks()} />
                     </div>
                   )}
                 </div>
