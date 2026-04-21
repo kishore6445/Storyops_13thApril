@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, AlertCircle, CheckCircle2, Clock, User, Archive } from "lucide-react"
+import { Search, AlertCircle, CheckCircle2, Clock, User, Archive, Copy } from "lucide-react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -45,17 +45,31 @@ export function TeamAnalyticsDashboard() {
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [taskToArchive, setTaskToArchive] = useState<Task | null>(null)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [copiedSection, setCopiedSection] = useState<string | null>(null)
 
   const { toast } = useToast()
   const { data: analyticsData } = useSWR("/api/team/analytics", fetcher)
   const teamMembers: TeamMember[] = analyticsData?.teamMembers || []
 
+  // Copy tasks from a section to clipboard
+  const handleCopyTasks = (tasks: Task[], sectionName: string) => {
+    if (tasks.length === 0) return
+    const taskIds = tasks.map(t => t.task_id || t.id).join("\n")
+    navigator.clipboard.writeText(taskIds)
+    setCopiedSection(sectionName)
+    toast({
+      title: "Copied!",
+      description: `${tasks.length} task ID${tasks.length > 1 ? "s" : ""} copied to clipboard`,
+    })
+    setTimeout(() => setCopiedSection(null), 2000)
+  }
+
   // Get today's date for comparisons
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Calculate if task is overdue or due soon
-  const getTaskStatus = (dueDate?: string) => {
+  // Handle archive action
+  const handleArchiveTask = async () => {
     if (!dueDate) return "no-date"
     const due = new Date(dueDate)
     due.setHours(0, 0, 0, 0)
@@ -348,9 +362,24 @@ export function TeamAnalyticsDashboard() {
                     {/* Overdue section */}
                     {overdueTasks.length > 0 && (statusFilter === "all" || statusFilter === "overdue") && (
                       <div>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <AlertCircle className="w-4 h-4 text-red-600" />
-                          <h4 className="font-semibold text-red-600 text-sm">Overdue ({overdueTasks.length})</h4>
+                        <div className="flex items-center justify-between mb-3 px-1">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-600" />
+                            <h4 className="font-semibold text-red-600 text-sm">Overdue ({overdueTasks.length})</h4>
+                          </div>
+                          <button
+                            onClick={() => handleCopyTasks(overdueTasks, "overdue")}
+                            className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all",
+                              copiedSection === "overdue"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
+                            )}
+                            title="Copy all overdue task IDs"
+                          >
+                            <Copy className="w-3 h-3" />
+                            {copiedSection === "overdue" ? "Copied!" : "Copy All"}
+                          </button>
                         </div>
                         <div className="space-y-2 mb-6">
                           {overdueTasks.map(task => <TaskRow key={task.id} task={task} />)}
@@ -361,9 +390,24 @@ export function TeamAnalyticsDashboard() {
                     {/* Due Soon section */}
                     {dueSoonTasks.length > 0 && (statusFilter === "all" || statusFilter === "due-soon") && (
                       <div>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <Clock className="w-4 h-4 text-amber-600" />
-                          <h4 className="font-semibold text-amber-600 text-sm">Due Soon ({dueSoonTasks.length})</h4>
+                        <div className="flex items-center justify-between mb-3 px-1">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                            <h4 className="font-semibold text-amber-600 text-sm">Due Soon ({dueSoonTasks.length})</h4>
+                          </div>
+                          <button
+                            onClick={() => handleCopyTasks(dueSoonTasks, "due-soon")}
+                            className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all",
+                              copiedSection === "due-soon"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-600"
+                            )}
+                            title="Copy all due soon task IDs"
+                          >
+                            <Copy className="w-3 h-3" />
+                            {copiedSection === "due-soon" ? "Copied!" : "Copy All"}
+                          </button>
                         </div>
                         <div className="space-y-2 mb-6">
                           {dueSoonTasks.map(task => <TaskRow key={task.id} task={task} />)}
@@ -387,9 +431,24 @@ export function TeamAnalyticsDashboard() {
                     {/* Completed section */}
                     {completedTasks.length > 0 && (statusFilter === "all" || statusFilter === "completed") && (
                       <div>
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          <h4 className="font-semibold text-green-600 text-sm">Completed ({completedTasks.length})</h4>
+                        <div className="flex items-center justify-between mb-3 px-1">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <h4 className="font-semibold text-green-600 text-sm">Completed ({completedTasks.length})</h4>
+                          </div>
+                          <button
+                            onClick={() => handleCopyTasks(completedTasks, "completed")}
+                            className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all",
+                              copiedSection === "completed"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600"
+                            )}
+                            title="Copy all completed task IDs"
+                          >
+                            <Copy className="w-3 h-3" />
+                            {copiedSection === "completed" ? "Copied!" : "Copy All"}
+                          </button>
                         </div>
                         <div className="space-y-2">
                           {completedTasks.map(task => <TaskRow key={task.id} task={task} />)}
