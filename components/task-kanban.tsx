@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Task } from "./my-tasks-today"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, Circle, ChevronDown, Calendar } from "lucide-react"
+import { CheckCircle2, Circle, ChevronDown, Calendar, Archive } from "lucide-react"
 import { TaskTimer } from "./task-timer"
 
 interface KanbanColumn {
@@ -26,11 +26,12 @@ interface TaskKanbanProps {
   selectedTaskIds?: Set<string>
   onToggleTaskSelection?: (taskId: string) => void
   showCheckboxes?: boolean
+  onArchive?: (taskId: string) => void
 }
 
 const CARDS_PER_COLUMN_LIMIT = 6
 
-export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate, onEditTask, selectedTaskIds, onToggleTaskSelection, showCheckboxes }: TaskKanbanProps) {
+export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate, onEditTask, selectedTaskIds, onToggleTaskSelection, showCheckboxes, onArchive }: TaskKanbanProps) {
   const router = useRouter()
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [sourceColumn, setSourceColumn] = useState<string | null>(null)
@@ -38,6 +39,29 @@ export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate,
   const [isAnimating, setIsAnimating] = useState(false)
   const [expandedDoneColumn, setExpandedDoneColumn] = useState(true)
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({})
+  const [archivingId, setArchivingId] = useState<string | null>(null)
+
+  const handleArchiveTask = async (taskId: string) => {
+    setArchivingId(taskId)
+    try {
+      const token = localStorage.getItem("sessionToken")
+      const res = await fetch("/api/tasks/archive", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ taskId, action: "archive" }),
+      })
+      if (res.ok) {
+        onArchive?.(taskId)
+      }
+    } catch (err) {
+      console.error("[v0] Archive failed:", err)
+    } finally {
+      setArchivingId(null)
+    }
+  }
 
   const doneTasks = tasks.filter((t) => t.status === "done" || t.completed)
 
@@ -465,6 +489,17 @@ export function TaskKanban({ tasks, onTaskStatusChange, isLoading, onTaskUpdate,
                     <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-gray-900">
                       {task.title}
                     </h4>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleArchiveTask(task.id)
+                      }}
+                      disabled={archivingId === task.id}
+                      className="mt-2 flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-orange-600 hover:bg-orange-50 border border-gray-200 hover:border-orange-200 rounded transition-all disabled:opacity-40 w-full justify-center"
+                    >
+                      <Archive className="w-3 h-3" />
+                      {archivingId === task.id ? "Archiving..." : "Archive"}
+                    </button>
                   </div>
                 ))}
             </div>

@@ -574,6 +574,7 @@ console.log("formData entries", Array.from(fileData.entries()))
             selectedTaskIds={selectedTaskIds}
             onToggleTaskSelection={toggleTaskSelection}
             showCheckboxes={false}
+            onArchive={() => mutate()}
           />
         </div>
       </div>

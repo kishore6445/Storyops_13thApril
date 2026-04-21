@@ -130,7 +130,7 @@ function SprintKanbanView({ sprint, tasks, onArchive }: { sprint: DemoSprint; ta
   }
 
   const CARD_LIMIT = 6
-  
+
   return (
     <div className="overflow-x-auto pb-4 -mx-4 px-4">
       <div className="flex gap-3 min-w-max">

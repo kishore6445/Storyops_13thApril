@@ -1,10 +1,6 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getSupabaseAdminClient } from "@/lib/db"
+import { validateSession } from "@/lib/auth"
 
 export async function POST(request: Request) {
   try {
@@ -14,28 +10,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Get current user from session
     const authHeader = request.headers.get("authorization")
-    if (!authHeader) {
+    const token = authHeader?.replace("Bearer ", "") || ""
+    const session = await validateSession(token)
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const token = authHeader.replace("Bearer ", "")
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token)
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const supabase = getSupabaseAdminClient()
 
     if (action === "archive") {
-      // Archive the task
       const { data, error } = await supabase
         .from("sprint_tasks")
         .update({
           archived_at: new Date().toISOString(),
-          archived_by: user.id,
+          archived_by: session.userId,
         })
         .eq("id", taskId)
         .select()
@@ -47,7 +36,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ data, message: "Task archived successfully" })
     } else if (action === "restore") {
-      // Restore archived task
       const { data, error } = await supabase
         .from("sprint_tasks")
         .update({

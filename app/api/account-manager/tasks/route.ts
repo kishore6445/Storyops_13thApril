@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     let sprintTasksQuery = supabase
       .from('sprint_tasks')
       .select('*, assigned_user:users(id, full_name, email)')
+      .is('archived_at', null)
       .order('created_at', { ascending: false })
 
     if (sprintId === 'backlog') {
