@@ -435,7 +435,7 @@ export default function DailyReportPage() {
                 ]}
               />
               {/* Header */}
-              <div className="sticky top-0 z-40 bg-white border-b border-[#E5E5E7] shadow-sm">
+              <div className="sticky top-0 z-40 bg-white border-b border-[#E5E5E7] shadow-sm ml-[260px]">
                 <div className="max-w-6xl mx-auto px-6 py-6">
                   <div className="flex items-center justify-between mb-6">
                     <div>
