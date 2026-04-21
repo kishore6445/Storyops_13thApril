@@ -216,10 +216,10 @@ function SprintKanbanView({ sprint, tasks, onArchive }: { sprint: DemoSprint; ta
                                 onClick={() => handleArchive(task.taskId || task.id)}
                                 disabled={archivingId === (task.taskId || task.id)}
                                 title="Move to Archive"
-                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-1.5 py-0.5 text-xs text-[#86868B] hover:text-[#FF9500] hover:bg-orange-50 rounded transition-all"
+                                className="flex items-center gap-1 px-1.5 py-0.5 text-xs text-[#86868B] hover:text-orange-500 hover:bg-orange-50 rounded border border-transparent hover:border-orange-200 transition-all disabled:opacity-40"
                               >
                                 <Archive className="w-3 h-3" />
-                                <span>Archive</span>
+                                <span>{archivingId === (task.taskId || task.id) ? "..." : "Archive"}</span>
                               </button>
                             )}
                           </div>
