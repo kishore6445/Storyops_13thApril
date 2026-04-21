@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
           sprint_id
         `)
         .order("due_date", { ascending: true })
+        .is("archived_at", null)
 
       if (!isAdmin) {
         tasksQuery = tasksQuery.eq("assigned_to", userId)

@@ -1,10 +1,6 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getSupabaseAdminClient } from "@/lib/db"
+import { validateSession } from "@/lib/auth"
 
 export async function GET(request: Request) {
   try {
@@ -14,25 +10,18 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "50")
     const offset = parseInt(searchParams.get("offset") || "0")
 
-    // Get current user
     const authHeader = request.headers.get("authorization")
-    if (!authHeader) {
+    const token = authHeader?.replace("Bearer ", "") || ""
+    const session = await validateSession(token)
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const token = authHeader.replace("Bearer ", "")
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token)
+    const supabase = getSupabaseAdminClient()
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Build query
     let query = supabase
-      .from("sprint_tasks")
-      .select("*", { count: "exact" })
+      .from("tasks")
+      .select("id, title, status, archived_at, archived_by, client_id", { count: "exact" })
       .not("archived_at", "is", null)
       .order("archived_at", { ascending: false })
       .range(offset, offset + limit - 1)
@@ -42,7 +31,7 @@ export async function GET(request: Request) {
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+      query = query.ilike("title", `%${search}%`)
     }
 
     const { data, error, count } = await query

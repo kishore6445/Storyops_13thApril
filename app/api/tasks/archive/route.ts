@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     if (action === "archive") {
       const { data, error } = await supabase
-        .from("sprint_tasks")
+        .from("tasks")
         .update({
           archived_at: new Date().toISOString(),
           archived_by: session.userId,
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ data, message: "Task archived successfully" })
     } else if (action === "restore") {
       const { data, error } = await supabase
-        .from("sprint_tasks")
+        .from("tasks")
         .update({
           archived_at: null,
           archived_by: null,
