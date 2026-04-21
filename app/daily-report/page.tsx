@@ -426,7 +426,7 @@ export default function DailyReportPage() {
         <div className="flex-1 flex flex-col">
           <TopNav />
           <main className="flex-1 overflow-auto">
-            <div className="min-h-screen bg-gradient-to-br from-[#F5F5F7] to-[#EFEFEF]">
+            <div className="min-h-screen bg-gradient-to-br from-[#F5F5F7] to-[#EFEFEF] ml-[260px]">
               {/* Breadcrumbs */}
               <BreadcrumbTrail
                 items={[
