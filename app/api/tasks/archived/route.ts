@@ -18,13 +18,19 @@ export async function GET(request: Request) {
     }
 
     const supabase = getSupabaseAdminClient()
+    const isAdmin = session.role === "admin" || session.role === "manager"
 
     let query = supabase
       .from("tasks")
-      .select("id, title, status, archived_at, archived_by, client_id", { count: "exact" })
+      .select("id, title, status, archived_at, archived_by, client_id, assigned_to", { count: "exact" })
       .not("archived_at", "is", null)
       .order("archived_at", { ascending: false })
       .range(offset, offset + limit - 1)
+
+    // Non-admins only see their own archived tasks
+    if (!isAdmin) {
+      query = query.eq("assigned_to", session.userId)
+    }
 
     if (clientId) {
       query = query.eq("client_id", clientId)
