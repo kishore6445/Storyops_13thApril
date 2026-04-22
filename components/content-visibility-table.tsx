@@ -57,7 +57,7 @@ export default function ContentVisibilityTable({
       setRecords((prev) =>
         prev.map((r) => (r.id === record.id ? { ...r, [field]: value } : r))
       )
-      onDataChanged?.()
+      // Do NOT call onDataChanged here — that triggers a full page refresh
     } catch (err) {
       console.error("[v0] Inline update failed:", err)
     } finally {
@@ -128,14 +128,19 @@ export default function ContentVisibilityTable({
   }
 
   const getStatusColor = (status: string) => {
+    const key = status.toUpperCase()
     const colors: Record<string, string> = {
       PUBLISHED: "bg-green-50 text-green-700 border-green-200",
       SCHEDULED: "bg-blue-50 text-blue-700 border-blue-200",
       IN_PRODUCTION: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      PRODUCTION_DONE: "bg-teal-50 text-teal-700 border-teal-200",
       PLANNED: "bg-gray-50 text-gray-700 border-gray-200",
       DELAYED: "bg-red-50 text-red-700 border-red-200",
+      MISSED: "bg-red-50 text-red-700 border-red-200",
+      PENDING: "bg-orange-50 text-orange-700 border-orange-200",
+      PAUSED: "bg-purple-50 text-purple-700 border-purple-200",
     }
-    return colors[status] || colors.PLANNED
+    return colors[key] || colors.PLANNED
   }
 
   const getStatusIcon = (status: string) => {
@@ -264,12 +269,12 @@ export default function ContentVisibilityTable({
               {/* Status — inline dropdown */}
               <td className="px-4 py-3">
                 <select
-                  value={record.status}
+                  value={(record.status || "planned").toLowerCase()}
                   disabled={savingField === `${record.id}:status`}
                   onChange={(e) => handleInlineUpdate(record, "status", e.target.value)}
                   className={cn(
                     "text-xs font-medium border rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 cursor-pointer",
-                    getStatusColor(record.status.toUpperCase())
+                    getStatusColor(record.status)
                   )}
                 >
                   {CONTENT_STATUS_OPTIONS.map((opt) => (
