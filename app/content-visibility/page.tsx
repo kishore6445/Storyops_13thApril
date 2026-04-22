@@ -308,7 +308,7 @@ export default function ContentVisibilityPage() {
   }
 
   return (
-    <div className="w-full max-w-7xl">
+    <div className="w-full">
               {/* Header */}
               <div className="mb-8 flex items-center justify-between">
                 <div>
