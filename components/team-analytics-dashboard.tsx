@@ -69,18 +69,18 @@ export function TeamAnalyticsDashboard() {
   today.setHours(0, 0, 0, 0)
 
   // Handle archive action
-  const handleArchiveTask = async () => {
-    if (!dueDate) return "no-date"
-    const due = new Date(dueDate)
-    due.setHours(0, 0, 0, 0)
-    
-    const daysUntilDue = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (daysUntilDue < 0) return "overdue"
-    if (daysUntilDue === 0) return "due-today"
-    if (daysUntilDue <= 3) return "due-soon"
-    return "on-track"
-  }
+  // const handleArchiveTask = async () => {
+  //   if (!dueDate) return "no-date"
+  //   const due = new Date(dueDate)
+  //   due.setHours(0, 0, 0, 0)
+
+  //   const daysUntilDue = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+  //   if (daysUntilDue < 0) return "overdue"
+  //   if (daysUntilDue === 0) return "due-today"
+  //   if (daysUntilDue <= 3) return "due-soon"
+  //   return "on-track"
+  // }
 
   // Handle archive action
   const handleArchiveTask = async () => {
@@ -134,7 +134,7 @@ export function TeamAnalyticsDashboard() {
 
   // Filter tasks
   let displayedTasks = selectedMember?.tasksAssigned || []
-  
+
   displayedTasks = displayedTasks.filter(task => {
     if (statusFilter === "overdue") {
       return getTaskStatus(task.due_date) === "overdue"
@@ -159,7 +159,7 @@ export function TeamAnalyticsDashboard() {
   const TaskRow = ({ task }: { task: Task }) => {
     const taskStatus = getTaskStatus(task.due_date)
     const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"
-    
+
     return (
       <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors hover:shadow-sm group">
         {/* Status indicator */}
@@ -189,7 +189,7 @@ export function TeamAnalyticsDashboard() {
 
         {/* Due date with status badge */}
         <div className="flex-shrink-0 text-right">
-          <p className={cn("text-sm font-medium", 
+          <p className={cn("text-sm font-medium",
             taskStatus === "overdue" && "text-red-600",
             taskStatus === "due-today" && "text-red-600",
             taskStatus === "due-soon" && "text-amber-600",

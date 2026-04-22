@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { FileText, AlertCircle, CheckCircle, Clock, Pencil, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ContentRecordListItem } from "@/lib/content-records"
+import { CONTENT_STATUS_OPTIONS, toStatusLabel } from "@/lib/content-records"
 
 interface ContentVisibilityTableProps {
   activeTab?: string
@@ -32,6 +33,37 @@ export default function ContentVisibilityTable({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [savingField, setSavingField] = useState<string | null>(null) // "recordId:fieldName"
+
+  const handleInlineUpdate = async (
+    record: ContentRecordListItem,
+    field: keyof ContentRecordListItem,
+    value: string
+  ) => {
+    const key = `${record.id}:${field}`
+    setSavingField(key)
+    try {
+      const token = localStorage.getItem("sessionToken")
+      const updated = { ...record, [field]: value }
+      const response = await fetch(`/api/content/records/${record.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(updated),
+      })
+      if (!response.ok) throw new Error("Failed to update")
+      setRecords((prev) =>
+        prev.map((r) => (r.id === record.id ? { ...r, [field]: value } : r))
+      )
+      onDataChanged?.()
+    } catch (err) {
+      console.error("[v0] Inline update failed:", err)
+    } finally {
+      setSavingField(null)
+    }
+  }
 
   useEffect(() => {
     const fetchRecords = async () => {
@@ -149,34 +181,105 @@ export default function ContentVisibilityTable({
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Title</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Client</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Platform</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Scheduled</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Owner</th>
-            <th className="px-4 py-3 text-left font-semibold text-gray-900">Status</th>
-            {showActions && <th className="px-4 py-3 text-right font-semibold text-gray-900">Actions</th>}
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Title</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Client</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Platform</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Owner</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Scheduled Date</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Production Started</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Production Completed</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Published Date</th>
+            <th className="px-4 py-3 text-left font-semibold text-gray-900 whitespace-nowrap">Status</th>
+            {showActions && <th className="px-4 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {records.map((record) => (
             <tr key={record.id} className="border-b border-gray-200 hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-900 font-medium">{record.title}</td>
-              <td className="px-4 py-3 text-gray-600">{record.client}</td>
-              <td className="px-4 py-3 text-gray-600 capitalize">{record.platform}</td>
-              <td className="px-4 py-3 text-gray-600">{record.scheduledDate}</td>
-              <td className="px-4 py-3 text-gray-600">{record.owner}</td>
+              <td className="px-4 py-3 text-gray-900 font-medium max-w-[200px] truncate">{record.title}</td>
+              <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{record.client}</td>
+              <td className="px-4 py-3 text-gray-600 capitalize whitespace-nowrap">{record.platform}</td>
+              <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{record.owner}</td>
+
+              {/* Scheduled Date — inline date input */}
               <td className="px-4 py-3">
-                <span
+                <input
+                  type="date"
+                  defaultValue={record.scheduledDate || ""}
+                  disabled={savingField === `${record.id}:scheduledDate`}
+                  onBlur={(e) => {
+                    if (e.target.value !== (record.scheduledDate || "")) {
+                      handleInlineUpdate(record, "scheduledDate", e.target.value)
+                    }
+                  }}
+                  className="text-xs text-gray-600 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 bg-white w-[130px]"
+                />
+              </td>
+
+              {/* Production Started — inline date input */}
+              <td className="px-4 py-3">
+                <input
+                  type="date"
+                  defaultValue={record.productionStartedDate || ""}
+                  disabled={savingField === `${record.id}:productionStartedDate`}
+                  onBlur={(e) => {
+                    if (e.target.value !== (record.productionStartedDate || "")) {
+                      handleInlineUpdate(record, "productionStartedDate", e.target.value)
+                    }
+                  }}
+                  className="text-xs text-gray-600 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 bg-white w-[130px]"
+                />
+              </td>
+
+              {/* Production Completed — inline date input */}
+              <td className="px-4 py-3">
+                <input
+                  type="date"
+                  defaultValue={record.productionCompletedDate || ""}
+                  disabled={savingField === `${record.id}:productionCompletedDate`}
+                  onBlur={(e) => {
+                    if (e.target.value !== (record.productionCompletedDate || "")) {
+                      handleInlineUpdate(record, "productionCompletedDate", e.target.value)
+                    }
+                  }}
+                  className="text-xs text-gray-600 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 bg-white w-[130px]"
+                />
+              </td>
+
+              {/* Published Date — inline date input */}
+              <td className="px-4 py-3">
+                <input
+                  type="date"
+                  defaultValue={record.publishedDate || ""}
+                  disabled={savingField === `${record.id}:publishedDate`}
+                  onBlur={(e) => {
+                    if (e.target.value !== (record.publishedDate || "")) {
+                      handleInlineUpdate(record, "publishedDate", e.target.value)
+                    }
+                  }}
+                  className="text-xs text-gray-600 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 bg-white w-[130px]"
+                />
+              </td>
+
+              {/* Status — inline dropdown */}
+              <td className="px-4 py-3">
+                <select
+                  value={record.status}
+                  disabled={savingField === `${record.id}:status`}
+                  onChange={(e) => handleInlineUpdate(record, "status", e.target.value)}
                   className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border",
-                    getStatusColor(record.status)
+                    "text-xs font-medium border rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-50 cursor-pointer",
+                    getStatusColor(record.status.toUpperCase())
                   )}
                 >
-                  {getStatusIcon(record.status)}
-                  {record.status}
-                </span>
+                  {CONTENT_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </td>
+
               {showActions && (
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-2">
