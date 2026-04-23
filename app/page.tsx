@@ -70,7 +70,7 @@ export default function DashboardPage() {
   const [showClientDetail, setShowClientDetail] = useState(false)
   const [showPostComposer, setShowPostComposer] = useState(false)
   const [clients, setClients] = useState([] as any[])
-  
+
   // Redirect clients to their portal
   useEffect(() => {
     if (user?.role === 'client') {
@@ -163,7 +163,7 @@ export default function DashboardPage() {
         <div className="flex">
           <Sidebar currentPhase={currentPhase} onPhaseChange={setCurrentPhase} />
           <main className="flex-1 ml-64 transition-all duration-300 mt-16 p-8 [@media(max-width:768px)]:ml-20">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className=" mx-auto space-y-8">
               {currentPhase === "overview" && (
                 <DashboardHome
                   clients={clients}
@@ -228,8 +228,8 @@ export default function DashboardPage() {
               {currentPhase === "workflow" && <WorkflowDashboard clientId={selectedClientId} />}
               {currentPhase === "workflow-manager" && <WorkflowManager />}
               {currentPhase === "content-calendar" && (
-                <ContentCalendarView 
-                  clientId={selectedClientId} 
+                <ContentCalendarView
+                  clientId={selectedClientId}
                   onCreatePost={() => setShowPostComposer(true)}
                 />
               )}
@@ -252,22 +252,22 @@ export default function DashboardPage() {
         </div>
 
         <AddClientModal isOpen={showAddClientModal} onClose={() => setShowAddClientModal(false)} onSubmit={handleAddClient} />
-        
+
         {showPostComposer && (
-          <PostComposer 
+          <PostComposer
             onClose={() => setShowPostComposer(false)}
             onSchedule={async (post) => {
               console.log('[v0] Scheduling post:', post)
-              
+
               // Close modal immediately for better UX
               setShowPostComposer(false)
-              
+
               // Make API call to schedule post
               try {
                 const token = localStorage.getItem('sessionToken')
                 const response = await fetch('/api/posts/schedule', {
                   method: 'POST',
-                  headers: { 
+                  headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                   },
@@ -281,9 +281,9 @@ export default function DashboardPage() {
                     status: post.status,
                   }),
                 })
-                
+
                 const data = await response.json()
-                
+
                 if (data.success) {
                   console.log('[v0] Post scheduled successfully:', data.postId)
                   // SWR will auto-refresh the calendar via cache revalidation
