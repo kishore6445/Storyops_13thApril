@@ -36,6 +36,7 @@ import {
   Clock,
   Archive,
   Briefcase,
+  BarChart2,
 } from "lucide-react"
 
 const primaryNav = [
@@ -84,6 +85,12 @@ const myTasksSubmenu = [
     name: "Archive",
     icon: Archive,
     href: "/archive",
+  },
+  {
+    id: "reports",
+    name: "Reports",
+    icon: BarChart2,
+    href: "/reports",
   },
 ]
 
