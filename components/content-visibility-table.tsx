@@ -182,7 +182,7 @@ export default function ContentVisibilityTable({
   }
 
   return (
-    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+    <div className="overflow-x-auto border border-gray-200 rounded-lg w-full">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr>
