@@ -602,15 +602,70 @@ export default function DailyReportPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Form Column */}
-                  <div className="lg:col-span-1">
-                    <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-6 sticky top-24">
-                      <h2 className="text-lg font-semibold text-[#1D1D1F] mb-4">
-                        {editingId ? "Edit Entry" : "Add Time Entry"}
-                      </h2>
+                {/* HERO SECTION */}
+                <div className="mb-8 pt-2">
+                  <div className="flex items-end gap-4">
+                    <div className="flex-1">
+                      <div className="text-6xl font-black text-[#1D1D1F] leading-tight">
+                        {totalHours.toFixed(1)}
+                        <span className="text-2xl ml-2 font-semibold text-[#86868B]">hours</span>
+                      </div>
+                      <p className="text-sm text-[#86868B] mt-3">
+                        {entries.length} {entries.length === 1 ? "entry" : "entries"} •{" "}
+                        {new Set(entries.map(e => e.client)).size} {new Set(entries.map(e => e.client)).size === 1 ? "client" : "clients"} •{" "}
+                        <span className={cn("font-medium", reportStatus === "submitted" ? "text-[#34C759]" : "text-[#FF9500]")}>
+                          {reportStatus === "submitted" ? "Submitted" : "Draft"}
+                        </span>
+                      </p>
+                    </div>
+                    {reportStatus === "draft" && (
+                      <button
+                        onClick={() => setShowSubmitModal(true)}
+                        disabled={entries.length === 0}
+                        className="px-6 py-3 bg-[#007AFF] text-white rounded-lg hover:opacity-90 disabled:opacity-50 font-semibold text-sm transition-all flex items-center gap-2"
+                      >
+                        <Send className="w-4 h-4" />
+                        Submit Report
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                      <form onSubmit={handleAddEntry} className="space-y-4">
+                {/* TIME DISTRIBUTION BY CLIENT */}
+                {entries.length > 0 && (
+                  <div className="mb-8 pb-6 border-b border-[#E5E5E7]">
+                    <h3 className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-4">Time Distribution</h3>
+                    <div className="space-y-3">
+                      {timeByClient.map(({ name, hours }) => {
+                        const percentage = (hours / totalHours) * 100
+                        return (
+                          <div key={name} className="flex items-center gap-4">
+                            <div className="w-32 text-sm font-medium text-[#1D1D1F] truncate" title={name}>
+                              {name}
+                            </div>
+                            <div className="flex-1 h-2 bg-[#F5F5F7] rounded-full overflow-hidden">
+                              <div className="h-full bg-[#007AFF] rounded-full" style={{ width: `${percentage}%` }} />
+                            </div>
+                            <div className="w-12 text-right text-sm font-semibold text-[#007AFF]">
+                              {hours.toFixed(1)}h
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* MAIN 2-COLUMN LAYOUT */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* LEFT COLUMN: Form (30%) */}
+                  <div className="lg:col-span-1">
+                    <div className="sticky top-24">
+                      <h2 className="text-sm font-bold text-[#1D1D1F] mb-4">Add Time Entry</h2>
+                      <form
+                        onSubmit={handleAddEntry}
+                        className="space-y-4 bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-6"
+                      >
                         {/* Client Selection */}
                         <div>
                           <label className="block text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-2">
@@ -726,7 +781,7 @@ export default function DailyReportPage() {
                           className="w-full px-4 py-2.5 bg-[#007AFF] text-white rounded-lg hover:opacity-90 disabled:opacity-50 font-medium text-sm transition-all flex items-center justify-center gap-2"
                         >
                           <Plus className="w-4 h-4" />
-                          {savingEntry ? "Saving..." : editingId ? "Update Entry" : "Add Entry_test"}
+                          {savingEntry ? "Saving..." : editingId ? "Update Entry" : "Add Entry"}
                         </button>
 
                         {editingId && (
@@ -749,124 +804,8 @@ export default function DailyReportPage() {
                     </div>
                   </div>
 
-                  {/* Entries Column */}
+                  {/* RIGHT COLUMN: Execution Feed (70%) */}
                   <div className="lg:col-span-2">
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-2 gap-4 mb-8">
-                      <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-6">
-                        <div className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-2">
-                          Total Hours
-                        </div>
-                        <div className="flex items-end gap-2">
-                          <div className="text-4xl font-black text-[#007AFF]">{totalHours.toFixed(1)}</div>
-                          <div className="text-xs text-[#86868B] mb-1">hours</div>
-                        </div>
-                        <div className="mt-3 w-full h-1 bg-[#F5F5F7] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#007AFF] transition-all"
-                            style={{ width: `${Math.min((totalHours / 8) * 100, 100)}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-[#86868B] mt-2">{entries.length} entries logged</p>
-                        {currentDate === new Date().toISOString().split("T")[0] && trackedHours > 0 && (
-                          <p className="text-xs text-[#007AFF] mt-2 font-medium">
-                            {trackedHours.toFixed(2)}h tracked via timer
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-6">
-                        <div className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-2">
-                          Status
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {reportStatus === "draft" ? (
-                            <>
-                              <div className="w-2 h-2 rounded-full bg-[#FF9500]" />
-                              <span className="text-sm font-semibold text-[#FF9500]">Draft</span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-2 h-2 rounded-full bg-[#34C759]" />
-                              <span className="text-sm font-semibold text-[#34C759]">Submitted</span>
-                            </>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#86868B] mt-3">
-                          {reportStatus === "draft" ? "Save and submit when ready" : "Report submitted successfully"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Time Breakdown by Client / Sprint / Task */}
-                    {entries.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                        {/* By Client */}
-                        <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-4">
-                          <div className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#007AFF] inline-block" />
-                            Time by Client
-                          </div>
-                          <div className="space-y-3">
-                            {timeByClient.map(({ name, hours }) => (
-                              <div key={name}>
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="text-[#1D1D1F] font-medium truncate max-w-[120px]" title={name}>{name}</span>
-                                  <span className="text-[#007AFF] font-semibold ml-2">{hours.toFixed(1)}h</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
-                                  <div className="h-full bg-[#007AFF] rounded-full transition-all" style={{ width: `${(hours / totalHours) * 100}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* By Sprint */}
-                        <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-4">
-                          <div className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#5856D6] inline-block" />
-                            Time by Sprint
-                          </div>
-                          <div className="space-y-3">
-                            {timeBySprint.map(({ name, hours }) => (
-                              <div key={name}>
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="text-[#1D1D1F] font-medium truncate max-w-[120px]" title={name}>{name}</span>
-                                  <span className="text-[#5856D6] font-semibold ml-2">{hours.toFixed(1)}h</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
-                                  <div className="h-full bg-[#5856D6] rounded-full transition-all" style={{ width: `${(hours / totalHours) * 100}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* By Task */}
-                        <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-4">
-                          <div className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-[#34C759] inline-block" />
-                            Time by Task
-                          </div>
-                          <div className="space-y-3">
-                            {timeByTask.map(({ name, hours }) => (
-                              <div key={name}>
-                                <div className="flex justify-between text-xs mb-1">
-                                  <span className="text-[#1D1D1F] font-medium truncate max-w-[120px]" title={name}>{name}</span>
-                                  <span className="text-[#34C759] font-semibold ml-2">{hours.toFixed(1)}h</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-[#F5F5F7] rounded-full overflow-hidden">
-                                  <div className="h-full bg-[#34C759] rounded-full transition-all" style={{ width: `${(hours / totalHours) * 100}%` }} />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Entries List Header — View Toggle + Copy All */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-1 bg-[#F5F5F7] rounded-lg p-1">
                         {(["client", "task", "sprint"] as const).map(v => (
