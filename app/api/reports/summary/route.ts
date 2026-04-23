@@ -59,12 +59,11 @@ export async function GET(request: NextRequest) {
 
     const reportIds = reports.map((r: any) => r.id)
 
-    // 2. Fetch time_entries — names (client_name, task_title, sprint_name) are stored
-    //    directly as text columns on time_entries. Use them as-is.
+    // 2. Fetch time_entries — FK is "report_id", only IDs stored (no name columns)
     let entriesQuery = supabase
       .from("time_entries")
-      .select("id, daily_report_id, client_id, client_name, sprint_id, sprint_name, task_id, task_title, hours, work_description, created_at")
-      .in("daily_report_id", reportIds)
+      .select("id, report_id, client_id, sprint_id, task_id, hours, work_description, created_at")
+      .in("report_id", reportIds)
       .order("created_at", { ascending: false })
 
     if (clientId) {
@@ -79,18 +78,28 @@ export async function GET(request: NextRequest) {
 
     const entries = rawEntries || []
 
-    // 3. Fetch user names for the report owners
+    // 3. Collect unique IDs then look up names in parallel
     const userIds = [...new Set(reports.map((r: any) => r.user_id).filter(Boolean))]
-    const { data: users } = userIds.length
-      ? await supabase.from("users").select("id, full_name, email").in("id", userIds)
-      : { data: [] }
+    const clientIds = [...new Set(entries.map((e: any) => e.client_id).filter(Boolean))]
+    const sprintIds = [...new Set(entries.map((e: any) => e.sprint_id).filter(Boolean))]
+    const taskIds = [...new Set(entries.map((e: any) => e.task_id).filter(Boolean))]
+
+    const [{ data: users }, { data: clients }, { data: sprints }, { data: tasks }] = await Promise.all([
+      userIds.length ? supabase.from("users").select("id, full_name, email").in("id", userIds) : Promise.resolve({ data: [] }),
+      clientIds.length ? supabase.from("clients").select("id, name").in("id", clientIds) : Promise.resolve({ data: [] }),
+      sprintIds.length ? supabase.from("sprints").select("id, name").in("id", sprintIds) : Promise.resolve({ data: [] }),
+      taskIds.length ? supabase.from("tasks").select("id, title").in("id", taskIds) : Promise.resolve({ data: [] }),
+    ])
 
     const userMap = new Map((users || []).map((u: any) => [u.id, { name: u.full_name || u.email, email: u.email || "" }]))
+    const clientMap = new Map((clients || []).map((c: any) => [c.id, c.name]))
+    const sprintMap = new Map((sprints || []).map((s: any) => [s.id, s.name]))
+    const taskMap = new Map((tasks || []).map((t: any) => [t.id, t.title]))
     const reportMap = new Map(reports.map((r: any) => [r.id, r]))
 
-    // 4. Build enriched entries using the stored text names directly
+    // 4. Build enriched entries
     const enrichedEntries = entries.map((entry: any) => {
-      const report = reportMap.get(entry.daily_report_id)
+      const report = reportMap.get(entry.report_id)
       const userInfo = report ? userMap.get(report.user_id) : null
       return {
         id: entry.id,
@@ -99,11 +108,11 @@ export async function GET(request: NextRequest) {
         user_name: userInfo?.name || "Unknown",
         user_email: userInfo?.email || "",
         client_id: entry.client_id || "",
-        client_name: entry.client_name || "Unknown Client",
+        client_name: clientMap.get(entry.client_id) || "Unknown Client",
         sprint_id: entry.sprint_id || "",
-        sprint_name: entry.sprint_name || "",
+        sprint_name: sprintMap.get(entry.sprint_id) || "",
         task_id: entry.task_id || "",
-        task_title: entry.task_title || "Untitled Task",
+        task_title: taskMap.get(entry.task_id) || "Untitled Task",
         hours: Number(entry.hours || 0),
         description: entry.work_description || "",
       }
