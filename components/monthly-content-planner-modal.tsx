@@ -59,10 +59,23 @@ export function MonthlyContentPlannerModal({
       return
     }
 
+    // Build flat array of { platform, contentType, target } for the buckets API
+    const [yearStr, monthNumStr] = month.split("-")
+    const monthNames = ["january","february","march","april","may","june","july","august","september","october","november","december"]
+    const monthName = monthNames[parseInt(monthNumStr, 10) - 1] || monthNumStr
+
+    const items = Object.entries(quantities)
+      .filter(([, qty]) => qty > 0)
+      .map(([key, qty]) => {
+        const [platform, contentType] = key.split("|")
+        return { platform, contentType, target: qty }
+      })
+
     await onSubmit({
-      client_id: clientId,
-      month,
-      items: quantities,
+      clientId,
+      month: monthName,
+      year: parseInt(yearStr, 10),
+      items,
       notes,
     })
 

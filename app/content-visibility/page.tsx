@@ -14,6 +14,8 @@ import { ClientSnapshotRow } from "@/components/client-snapshot-row"
 import { ContentPipelineFlow } from "@/components/content-pipeline-flow"
 import { ContentVisibilityHero } from "@/components/content-visibility-hero"
 import type { ContentRecordListItem } from "@/lib/content-records"
+import { ContentPipelineOverview } from "@/components/content-pipeline-overview"
+import { ContentBucketTracker, type ContentBucket } from "@/components/content-bucket-tracker"
 
 // Get current month
 const getCurrentMonth = () => {
@@ -60,6 +62,7 @@ export default function ContentVisibilityPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [clients, setClients] = useState<ClientOption[]>([])
   const [pipelineRecords, setPipelineRecords] = useState<ContentRecordListItem[]>([])
+  const [buckets, setBuckets] = useState<ContentBucket[]>([])
   const [pageError, setPageError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingRecord, setEditingRecord] = useState<ContentRecordListItem | null>(null)
@@ -82,9 +85,15 @@ export default function ContentVisibilityPage() {
           params.append("client", selectedClient)
         }
 
-        const [clientsResponse, recordsResponse] = await Promise.all([
+        const currentYear = new Date().getFullYear()
+        const bucketsParams = new URLSearchParams({ month: selectedMonth, year: String(currentYear) })
+        const selectedClientObj = clients.find(c => c.name === selectedClient)
+        if (selectedClientObj) bucketsParams.set("clientId", selectedClientObj.id)
+
+        const [clientsResponse, recordsResponse, bucketsResponse] = await Promise.all([
           fetch("/api/clients", { headers }),
           fetch(`/api/content/records?${params.toString()}`, { headers }),
+          fetch(`/api/content/buckets?${bucketsParams.toString()}`, { headers }),
         ])
 
         if (!clientsResponse.ok || !recordsResponse.ok) {
@@ -93,9 +102,11 @@ export default function ContentVisibilityPage() {
 
         const clientsData = await clientsResponse.json()
         const recordsData = await recordsResponse.json()
+        const bucketsData = bucketsResponse.ok ? await bucketsResponse.json() : { buckets: [] }
 
         setClients(clientsData.clients || [])
         setPipelineRecords(recordsData.records || [])
+        setBuckets(bucketsData.buckets || [])
       } catch (loadError) {
         console.error("[v0] Failed to load content management data:", loadError)
         setPageError(loadError instanceof Error ? loadError.message : "Failed to load content management data")
@@ -389,105 +400,11 @@ export default function ContentVisibilityPage() {
 
               {/* Tab Content */}
               {activeTab === "pipeline" && (
-                <div className="space-y-8">
-                  {/* New Hero Component - 5 Second View */}
-                  <ContentVisibilityHero
-                    target={totals.planned}
-                    published={totals.published}
-                    scheduled={totals.scheduled}
-                    productionDone={totals.productionDone}
-                    insights={generateInsights()}
-                    platformMetrics={generatePlatformMetrics()}
-                    clientName={selectedClient === "All Clients" ? `All Clients - ${selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}` : selectedClient}
-                    isAllClients={selectedClient === "All Clients"}
-                  />
-
-                  {/* Progressive Disclosure: Advanced Breakdown Toggle */}
-                  <button
-                    onClick={() => setShowAdvancedBreakdown(!showAdvancedBreakdown)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        "w-4 h-4 transition-transform",
-                        showAdvancedBreakdown ? "rotate-180" : ""
-                      )}
-                    />
-                    View Advanced Pipeline Breakdown
-                  </button>
-
-                  {/* Advanced Pipeline Views - Hidden by Default */}
-                  {showAdvancedBreakdown && (
-                    <div className="space-y-6 pt-4 border-t border-gray-200">
-                      {/* Content Pipeline Flow Visualization */}
-                      <ContentPipelineFlow
-                        target={totals.planned}
-                        productionDone={totals.scheduled - totals.published}
-                        scheduled={totals.scheduled}
-                        published={totals.published}
-                      />
-
-                      {/* Client Snapshots - Only show when All Clients selected */}
-                      {selectedClient === "All Clients" && (
-                        <ClientSnapshotRow clients={generateClientSnapshots()} />
-                      )}
-
-                      {/* Pipeline Overview Stats */}
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                        <h3 className="font-semibold text-gray-900 mb-4">Pipeline Statistics</h3>
-                        <div className="grid grid-cols-4 gap-6">
-                          <div>
-                            <p className="text-xs text-gray-600 font-medium mb-1">Total Planned</p>
-                            <p className="text-2xl font-bold text-gray-900">{totals.planned}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-medium mb-1">Scheduled</p>
-                            <p className="text-2xl font-bold text-blue-600">{totals.scheduled}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-medium mb-1">Published</p>
-                            <p className="text-2xl font-bold text-green-600">{totals.published}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-medium mb-1">Gap</p>
-                            <p className="text-2xl font-bold text-red-600">{totals.planned - totals.published}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Client Pipeline */}
-                      <div>
-                        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                          {selectedClient === "All Clients" ? "All Clients" : selectedClient} - {selectedMonth.charAt(0).toUpperCase() + selectedMonth.slice(1)}
-                        </h2>
-                        <ContentClientPipeline
-                          clients={displayClients}
-                          loading={isLoading}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content Records Table */}
-                  <div>
-                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                      Content Records
-                    </h2>
-                    <ContentVisibilityTable
-                      filters={{
-                        month: selectedMonth,
-                        client: selectedClient,
-                      }}
-                      refreshKey={refreshKey}
-                      onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
-                      onEdit={(record) => {
-                        setEditingRecord(record)
-                        setShowAddModal(true)
-                        setActiveTab("tracker")
-                      }}
-                    />
-                  </div>
-                </div>
+                <ContentPipelineOverview
+                  buckets={buckets}
+                  selectedClient={selectedClient}
+                  month={selectedMonth}
+                />
               )}
 
               {activeTab === "calendar" && (
@@ -503,13 +420,12 @@ export default function ContentVisibilityPage() {
 
               {activeTab === "tracker" && (
                 <div key="tracker-tab">
-                  <ContentVisibilityTable
+                  <ContentBucketTracker
+                    month={selectedMonth}
+                    year={new Date().getFullYear()}
+                    clientId={clients.find(c => c.name === selectedClient)?.id || ""}
                     refreshKey={refreshKey}
                     onDataChanged={() => setRefreshKey((currentKey) => currentKey + 1)}
-                    onEdit={(record) => {
-                      setEditingRecord(record)
-                      setShowAddModal(true)
-                    }}
                   />
                 </div>
               )}
@@ -535,16 +451,22 @@ export default function ContentVisibilityPage() {
                   onClose={() => setShowMonthlyModal(false)}
                   onSubmit={async (plan) => {
                     try {
-                      const response = await fetch("/api/content/monthly-plans", {
+                      const token = localStorage.getItem("sessionToken")
+                      const response = await fetch("/api/content/buckets", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                          "Content-Type": "application/json",
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
                         body: JSON.stringify(plan),
                       })
                       if (response.ok) {
                         setRefreshKey((currentKey) => currentKey + 1)
                         setShowMonthlyModal(false)
+                        setActiveTab("tracker")
                       } else {
-                        alert("Failed to create monthly plan")
+                        const err = await response.json()
+                        alert(err.error || "Failed to create monthly plan")
                       }
                     } catch (error) {
                       console.error("Failed to submit monthly plan:", error)
