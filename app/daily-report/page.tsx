@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2, Copy, Check } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2, Copy, Check, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatTime } from "@/lib/timer-service"
 import { AuthGuard } from "@/components/auth-guard"
 import { TopNav } from "@/components/top-nav"
 import { Sidebar } from "@/components/sidebar"
 import { BreadcrumbTrail } from "@/components/breadcrumb-trail"
+import { TeamWorkView } from "@/components/team-work-view"
 
 interface TimeEntry {
   id: string
@@ -52,6 +53,7 @@ export default function DailyReportPage() {
     const date = new Date()
     return date.toISOString().split("T")[0]
   })
+  const [activeTab, setActiveTab] = useState<"personal" | "team">("personal")
 
   const [trackedHours, setTrackedHours] = useState(0)
   const [todaySessions, setTodaySessions] = useState<any[]>([])
@@ -529,6 +531,7 @@ export default function DailyReportPage() {
               </div>
 
               {/* Main Content */}
+              {activeTab === "personal" ? (
               <div className="max-w-6xl mx-auto px-6 py-8">
                 {/* Pomodoro Tracked Sessions - Reference Section */}
                 {currentDate === new Date().toISOString().split("T")[0] && (
@@ -883,7 +886,35 @@ export default function DailyReportPage() {
                                             {entry.hours}h
                                           </span>
                                           <p className="text-sm font-semibold text-[#1D1D1F] truncate">{entry.task}</p>
-                                        </div>
+                  </div>
+
+                  {/* Tab Toggle */}
+                  <div className="flex items-center gap-1 bg-[#F5F5F7] rounded-lg p-1 w-fit">
+                    <button
+                      onClick={() => setActiveTab("personal")}
+                      className={cn(
+                        "px-4 py-2 rounded-md font-semibold text-sm transition-all",
+                        activeTab === "personal"
+                          ? "bg-white text-[#1D1D1F] shadow-sm"
+                          : "text-[#86868B] hover:text-[#1D1D1F]"
+                      )}
+                    >
+                      Personal Work
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("team")}
+                      className={cn(
+                        "px-4 py-2 rounded-md font-semibold text-sm transition-all flex items-center gap-2",
+                        activeTab === "team"
+                          ? "bg-white text-[#1D1D1F] shadow-sm"
+                          : "text-[#86868B] hover:text-[#1D1D1F]"
+                      )}
+                    >
+                      <Users className="w-4 h-4" />
+                      Team Work
+                    </button>
+                  </div>
+                </div>
                                         <p className="text-xs text-[#86868B] mb-1.5">
                                           {viewBy !== "client" && <span className="mr-2">{entry.client}</span>}
                                           {viewBy !== "sprint" && <span className="text-[#BDBDBE]">{entry.sprint}</span>}
@@ -924,6 +955,11 @@ export default function DailyReportPage() {
                   </div>
                 </div>
               </div>
+              ) : (
+              <div className="max-w-6xl mx-auto px-6 py-8">
+                <TeamWorkView date={currentDate} />
+              </div>
+              )}
 
               {/* Submit Modal */}
               {showSubmitModal && (
