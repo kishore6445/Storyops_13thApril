@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, Send, Calendar, Clock, CheckCircle2, Copy, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatTime } from "@/lib/timer-service"
 import { AuthGuard } from "@/components/auth-guard"
@@ -399,6 +399,50 @@ export default function DailyReportPage() {
   const filteredTasks = selectedSprintId
     ? (sprints.find(s => s.id === selectedSprintId)?.tasks || [])
     : []
+
+  const [viewBy, setViewBy] = useState<"client" | "task" | "sprint">("client")
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  const buildClientSummary = (clientName: string, clientEntries: TimeEntry[]) => {
+    const clientHours = clientEntries.reduce((s, e) => s + e.hours, 0)
+    const lines = [`${clientName} — ${clientHours.toFixed(1)}h`]
+    clientEntries.forEach(e => {
+      lines.push(`  • ${e.task} (${e.sprint}) — ${e.hours}h`)
+      if (e.description) lines.push(`    ${e.description}`)
+    })
+    return lines.join("\n")
+  }
+
+  const buildAllEntriesSummary = () => {
+    return entries
+      .map(e => `[${e.client}] ${e.task} | ${e.sprint} | ${e.hours}h | ${e.description}`)
+      .join("\n")
+  }
+
+  // Grouped data for display
+  const groupedByClient = entries.reduce((acc, entry) => {
+    if (!acc[entry.client]) acc[entry.client] = []
+    acc[entry.client].push(entry)
+    return acc
+  }, {} as Record<string, TimeEntry[]>)
+
+  const groupedByTask = entries.reduce((acc, entry) => {
+    if (!acc[entry.task]) acc[entry.task] = []
+    acc[entry.task].push(entry)
+    return acc
+  }, {} as Record<string, TimeEntry[]>)
+
+  const groupedBySprint = entries.reduce((acc, entry) => {
+    if (!acc[entry.sprint]) acc[entry.sprint] = []
+    acc[entry.sprint].push(entry)
+    return acc
+  }, {} as Record<string, TimeEntry[]>)
 
   // Time breakdown aggregations
   const timeByClient = entries.reduce((acc, entry) => {
@@ -822,57 +866,122 @@ export default function DailyReportPage() {
                       </div>
                     )}
 
-                    {/* Entries List */}
-                    <div className="space-y-3">
-                      {entries.length === 0 ? (
-                        <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-12 text-center">
-                          <Clock className="w-12 h-12 text-[#D1D5DB] mx-auto mb-3 opacity-50" />
-                          <p className="text-[#86868B] font-medium">No time entries yet</p>
-                          <p className="text-xs text-[#BDBDBE] mt-1">Add your first entry to get started</p>
-                        </div>
-                      ) : (
-                        entries.map(entry => (
-                          <div
-                            key={entry.id}
-                            className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-4 hover:shadow-md transition-all"
+                    {/* Entries List Header — View Toggle + Copy All */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-1 bg-[#F5F5F7] rounded-lg p-1">
+                        {(["client", "task", "sprint"] as const).map(v => (
+                          <button
+                            key={v}
+                            onClick={() => setViewBy(v)}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-semibold rounded-md transition-all capitalize",
+                              viewBy === v
+                                ? "bg-white text-[#1D1D1F] shadow-sm"
+                                : "text-[#86868B] hover:text-[#1D1D1F]"
+                            )}
                           >
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="inline-block px-2 py-1 bg-[#007AFF] bg-opacity-10 text-[#007AFF] text-xs font-semibold rounded">
-                                    {entry.hours}h
-                                  </span>
-                                  <h3 className="font-semibold text-[#1D1D1F] text-sm">{entry.task}</h3>
-                                </div>
-                                <p className="text-xs text-[#86868B]">{entry.client}</p>
-                                <p className="text-xs text-[#86868B]">{entry.sprint}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEditEntry(entry)}
-                                  disabled={reportStatus === "submitted"}
-                                  className="p-2 hover:bg-[#F5F5F7] rounded-lg transition-colors text-[#6B7280] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteEntry(entry.id)}
-                                  disabled={reportStatus === "submitted" || deletingId === entry.id}
-                                  className="p-2 hover:bg-[#FEE2E2] rounded-lg transition-colors text-[#EF4444] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {deletingId === entry.id ? (
-                                    <div className="w-4 h-4 border-2 border-[#EF4444] border-t-transparent rounded-full animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                            <p className="text-sm text-[#1D1D1F] leading-relaxed">{entry.description}</p>
-                          </div>
-                        ))
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                      {entries.length > 0 && (
+                        <button
+                          onClick={() => copyToClipboard(buildAllEntriesSummary(), "all")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#86868B] hover:text-[#1D1D1F] border border-[#E5E5E7] rounded-lg hover:bg-[#F5F5F7] transition-all"
+                        >
+                          {copiedKey === "all" ? <Check className="w-3.5 h-3.5 text-[#34C759]" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedKey === "all" ? "Copied!" : "Copy All"}
+                        </button>
                       )}
                     </div>
+
+                    {/* Entries grouped */}
+                    {entries.length === 0 ? (
+                      <div className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] p-12 text-center">
+                        <Clock className="w-12 h-12 text-[#D1D5DB] mx-auto mb-3 opacity-50" />
+                        <p className="text-[#86868B] font-medium">No time entries yet</p>
+                        <p className="text-xs text-[#BDBDBE] mt-1">Add your first entry to get started</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {Object.entries(
+                          viewBy === "client" ? groupedByClient
+                          : viewBy === "task" ? groupedByTask
+                          : groupedBySprint
+                        ).map(([groupLabel, groupEntries]) => {
+                          const groupHours = groupEntries.reduce((s, e) => s + e.hours, 0)
+                          const copyKey = `group-${groupLabel}`
+                          return (
+                            <div key={groupLabel} className="bg-white rounded-xl shadow-sm border border-[#E5E5E7] overflow-hidden">
+                              {/* Group Header */}
+                              <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F5F5F7] bg-[#FAFAFA]">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm font-bold text-[#1D1D1F]">{groupLabel}</span>
+                                  <span className="text-xs font-semibold text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded-full">
+                                    {groupHours.toFixed(1)}h
+                                  </span>
+                                  <span className="text-xs text-[#86868B]">{groupEntries.length} {groupEntries.length === 1 ? "entry" : "entries"}</span>
+                                </div>
+                                {viewBy === "client" && (
+                                  <button
+                                    onClick={() => copyToClipboard(buildClientSummary(groupLabel, groupEntries), copyKey)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#86868B] hover:text-[#1D1D1F] border border-[#E5E5E7] rounded-lg hover:bg-white transition-all"
+                                  >
+                                    {copiedKey === copyKey ? <Check className="w-3 h-3 text-[#34C759]" /> : <Copy className="w-3 h-3" />}
+                                    {copiedKey === copyKey ? "Copied!" : "Copy"}
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Entries in group */}
+                              <div className="divide-y divide-[#F5F5F7]">
+                                {groupEntries.map(entry => (
+                                  <div key={entry.id} className="px-5 py-4 hover:bg-[#FAFAFA] transition-colors">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="shrink-0 text-xs font-bold text-[#007AFF] bg-[#007AFF]/10 px-2 py-0.5 rounded">
+                                            {entry.hours}h
+                                          </span>
+                                          <p className="text-sm font-semibold text-[#1D1D1F] truncate">{entry.task}</p>
+                                        </div>
+                                        <p className="text-xs text-[#86868B] mb-1.5">
+                                          {viewBy !== "client" && <span className="mr-2">{entry.client}</span>}
+                                          {viewBy !== "sprint" && <span className="text-[#BDBDBE]">{entry.sprint}</span>}
+                                        </p>
+                                        {entry.description && (
+                                          <p className="text-xs text-[#6B7280] leading-relaxed">{entry.description}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex shrink-0 gap-1">
+                                        <button
+                                          onClick={() => handleEditEntry(entry)}
+                                          disabled={reportStatus === "submitted"}
+                                          className="p-1.5 hover:bg-[#F5F5F7] rounded-lg transition-colors text-[#6B7280] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteEntry(entry.id)}
+                                          disabled={reportStatus === "submitted" || deletingId === entry.id}
+                                          className="p-1.5 hover:bg-[#FEE2E2] rounded-lg transition-colors text-[#EF4444] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          {deletingId === entry.id ? (
+                                            <div className="w-3.5 h-3.5 border-2 border-[#EF4444] border-t-transparent rounded-full animate-spin" />
+                                          ) : (
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
