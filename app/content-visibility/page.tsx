@@ -1,19 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ChevronDown, Plus, Download, Upload } from "lucide-react"
+import { Plus, Download, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ContentClientPipeline } from "@/components/content-client-pipeline"
 import { ContentCalendarView } from "@/components/content-calendar-view"
-import ContentVisibilityTable from "@/components/content-visibility-table"
 import AddContentModal from "@/components/add-content-modal-cv"
 import { MonthlyContentPlannerModal } from "@/components/monthly-content-planner-modal"
-import { CommandCenterSummary } from "@/components/command-center-summary"
-import { BottleneckInsightRow } from "@/components/bottleneck-insight-row"
-import { ClientSnapshotRow } from "@/components/client-snapshot-row"
-import { ContentPipelineFlow } from "@/components/content-pipeline-flow"
-import { ContentVisibilityHero } from "@/components/content-visibility-hero"
-import type { ContentRecordListItem } from "@/lib/content-records"
 import { ContentPipelineOverview } from "@/components/content-pipeline-overview"
 import { ContentBucketTracker, type ContentBucket } from "@/components/content-bucket-tracker"
 
@@ -28,22 +20,6 @@ type ClientOption = {
   name: string
 }
 
-type PlatformMetric = {
-  platform: string
-  target: number
-  published: number
-  scheduled: number
-}
-
-type PipelineClient = {
-  id: string
-  name: string
-  planned: number
-  productionDone: number
-  scheduled: number
-  published: number
-  platformMetrics?: PlatformMetric[]
-}
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 
@@ -61,12 +37,10 @@ export default function ContentVisibilityPage() {
   const [activeTab, setActiveTab] = useState("pipeline")
   const [isLoading, setIsLoading] = useState(true)
   const [clients, setClients] = useState<ClientOption[]>([])
-  const [pipelineRecords, setPipelineRecords] = useState<ContentRecordListItem[]>([])
   const [buckets, setBuckets] = useState<ContentBucket[]>([])
   const [pageError, setPageError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [editingRecord, setEditingRecord] = useState<ContentRecordListItem | null>(null)
-  const [showAdvancedBreakdown, setShowAdvancedBreakdown] = useState(false)
+  const [editingRecord, setEditingRecord] = useState<{ id: string; [key: string]: unknown } | null>(null)
 
   useEffect(() => {
     const loadContentManagementData = async () => {
@@ -76,42 +50,30 @@ export default function ContentVisibilityPage() {
 
         const token = localStorage.getItem("sessionToken")
         const headers = token ? { Authorization: `Bearer ${token}` } : undefined
-        const params = new URLSearchParams({
-          viewMode: "all",
-          month: selectedMonth,
-        })
-
-        if (selectedClient !== "All Clients") {
-          params.append("client", selectedClient)
-        }
 
         const currentYear = new Date().getFullYear()
         const bucketsParams = new URLSearchParams({ month: selectedMonth, year: String(currentYear) })
         const selectedClientObj = clients.find(c => c.name === selectedClient)
         if (selectedClientObj) bucketsParams.set("clientId", selectedClientObj.id)
 
-        const [clientsResponse, recordsResponse, bucketsResponse] = await Promise.all([
+        const [clientsResponse, bucketsResponse] = await Promise.all([
           fetch("/api/clients", { headers }),
-          fetch(`/api/content/records?${params.toString()}`, { headers }),
           fetch(`/api/content/buckets?${bucketsParams.toString()}`, { headers }),
         ])
 
-        if (!clientsResponse.ok || !recordsResponse.ok) {
+        if (!clientsResponse.ok) {
           throw new Error("Failed to load content management data")
         }
 
         const clientsData = await clientsResponse.json()
-        const recordsData = await recordsResponse.json()
         const bucketsData = bucketsResponse.ok ? await bucketsResponse.json() : { buckets: [] }
 
         setClients(clientsData.clients || [])
-        setPipelineRecords(recordsData.records || [])
         setBuckets(bucketsData.buckets || [])
       } catch (loadError) {
         console.error("[v0] Failed to load content management data:", loadError)
         setPageError(loadError instanceof Error ? loadError.message : "Failed to load content management data")
         setClients([])
-        setPipelineRecords([])
       } finally {
         setIsLoading(false)
       }
@@ -121,202 +83,6 @@ export default function ContentVisibilityPage() {
   }, [selectedMonth, selectedClient, refreshKey])
 
   const clientOptions = ["All Clients", ...clients.map((client) => client.name)]
-
-  const pipelineMap = new Map<string, PipelineClient>()
-  const platformMetricsMap = new Map<string, Map<string, PlatformMetric>>()
-
-  pipelineRecords.forEach((record) => {
-    const currentClient = pipelineMap.get(record.client) || {
-      id: record.clientId,
-      name: record.client,
-      planned: 0,
-      scheduled: 0,
-      published: 0,
-      productionDone: 0,
-      platformMetrics: [],
-    }
-
-    // Initialize platform tracking for this client if not exists
-    if (!platformMetricsMap.has(record.client)) {
-      platformMetricsMap.set(record.client, new Map<string, PlatformMetric>())
-    }
-    const clientPlatforms = platformMetricsMap.get(record.client)!
-
-    // Initialize platform metric if not exists
-    if (!clientPlatforms.has(record.platform)) {
-      clientPlatforms.set(record.platform, {
-        platform: record.platform,
-        target: 0,
-        published: 0,
-        scheduled: 0,
-      })
-    }
-    const platformMetric = clientPlatforms.get(record.platform)!
-
-    const hasPlannedDate = Boolean(record.plannedDate)
-    const hasScheduledDate = Boolean(record.scheduledDate)
-    const hasPublishedDate = Boolean(record.publishedDate)
-    const hasProductionCompletedDate = Boolean(record.productionCompletedDate)
-    const isScheduledStatus = record.status === "scheduled"
-    const isPublishedStatus = record.status === "published"
-    const isProductionDoneStatus = record.status === "production_done"
-
-    // Planned: posts with any status or date set
-    if (hasPlannedDate || hasScheduledDate || hasPublishedDate || record.status) {
-      currentClient.planned += 1
-      platformMetric.target += 1
-    }
-
-    // Production Done: posts with productionCompletedDate or production_done status
-    if (hasProductionCompletedDate || isProductionDoneStatus) {
-      currentClient.productionDone += 1
-    }
-
-    // Scheduled: posts with scheduledDate or scheduled/published status
-    if (hasScheduledDate || isScheduledStatus || isPublishedStatus) {
-      currentClient.scheduled += 1
-      platformMetric.scheduled += 1
-    }
-
-    // Published: posts with publishedDate or published status
-    if (hasPublishedDate || isPublishedStatus) {
-      currentClient.published += 1
-      platformMetric.published += 1
-    }
-
-    pipelineMap.set(record.client, currentClient)
-  })
-
-  // Attach platform metrics to clients
-  pipelineMap.forEach((client) => {
-    const clientPlatforms = platformMetricsMap.get(client.name)
-    if (clientPlatforms) {
-      client.platformMetrics = Array.from(clientPlatforms.values())
-    }
-  })
-
-  const displayClients = Array.from(pipelineMap.values())
-
-  const totals = displayClients.reduce(
-    (accumulator, client) => ({
-      planned: accumulator.planned + client.planned,
-      productionDone: accumulator.productionDone + client.productionDone,
-      scheduled: accumulator.scheduled + client.scheduled,
-      published: accumulator.published + client.published,
-    }),
-    { planned: 0, productionDone: 0, scheduled: 0, published: 0 }
-  )
-
-  // Calculate insights for bottleneck detection
-  const generateInsights = () => {
-    const insights = []
-    const targetCount = totals.planned // Using planned as the target
-    const productionDone = totals.scheduled - totals.published
-
-    // Shortfall check
-    if (targetCount > 0 && totals.published < Math.floor(targetCount * 0.7)) {
-      const gap = targetCount - totals.published
-      insights.push({
-        type: "shortfall" as const,
-        message: `${gap} more posts needed to hit target`,
-        count: gap,
-        severity: gap > Math.floor(targetCount * 0.5) ? "high" : "medium",
-      })
-    }
-
-    // Production lag
-    if (totals.planned > 0 && totals.scheduled < Math.floor(totals.planned * 0.5)) {
-      const lag = totals.planned - totals.scheduled
-      insights.push({
-        type: "production_lag" as const,
-        message: `${lag} posts not yet scheduled`,
-        count: lag,
-        severity: lag > Math.floor(totals.planned * 0.3) ? "high" : "medium",
-      })
-    }
-
-    // Publishing lag
-    if (totals.scheduled > totals.published) {
-      const lag = totals.scheduled - totals.published
-      insights.push({
-        type: "publishing_lag" as const,
-        message: `${lag} scheduled posts pending publication`,
-        count: lag,
-        severity: lag > 5 ? "high" : "low",
-      })
-    }
-
-    return insights
-  }
-
-  // Generate platform metrics for expandable view
-  const generatePlatformMetrics = () => {
-    try {
-      const PLATFORMS = ["Instagram", "LinkedIn", "YouTube", "Blog", "Facebook", "Email", "TikTok", "Twitter/X", "Website"]
-
-      // Initialize platform counts
-      const platformCounts: Record<string, { achieved: number; target: number }> = {}
-      PLATFORMS.forEach(platform => {
-        platformCounts[platform] = { achieved: 0, target: 0 }
-      })
-
-      // Aggregate platform data from pipelineRecords
-      if (Array.isArray(pipelineRecords) && pipelineRecords.length > 0) {
-        pipelineRecords.forEach((record: any) => {
-          const platform = (record?.platform && record.platform.trim()) ? record.platform : "Blog"
-          if (platformCounts[platform]) {
-            platformCounts[platform].achieved += 1
-          }
-        })
-      }
-
-      // Calculate targets - divide total planned by number of active platforms
-      const activePlatforms = Object.keys(platformCounts).filter(p => platformCounts[p].achieved > 0)
-
-      if (activePlatforms.length === 0) {
-        return []
-      }
-
-      const targetsPerPlatform = Math.ceil(totals.planned / activePlatforms.length)
-
-      activePlatforms.forEach(platform => {
-        platformCounts[platform].target = Math.max(targetsPerPlatform, 1)
-      })
-
-      return activePlatforms
-        .map(platform => ({
-          name: platform,
-          achieved: platformCounts[platform].achieved,
-          target: platformCounts[platform].target,
-        }))
-        .sort((a, b) => b.achieved - a.achieved) // Sort by achieved count descending
-    } catch (error) {
-      console.error("[v0] Error generating platform metrics:", error)
-      return []
-    }
-  }
-
-  // Generate client snapshots for "All Clients" view
-  const generateClientSnapshots = () => {
-    try {
-      if (selectedClient !== "All Clients") return []
-
-      return displayClients.slice(0, 5).map((client) => ({
-        id: client.id,
-        name: client.name,
-        published: client.published,
-        target: client.planned,
-        status: client.published >= Math.floor(client.planned * 0.7)
-          ? "on-track"
-          : client.published >= Math.floor(client.planned * 0.4)
-            ? "needs-attention"
-            : "at-risk",
-      }))
-    } catch (error) {
-      console.error("[v0] Error generating client snapshots:", error)
-      return []
-    }
-  }
 
   return (
     <div className="w-full">
