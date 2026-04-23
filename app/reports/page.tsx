@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Calendar, Users, Building2, Search, Download, Link, Check, ChevronDown, ChevronUp, Clock } from "lucide-react"
+import { Calendar, Users, Building2, Search, Download, ChevronDown, ChevronUp, Clock } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
 import { TopNav } from "@/components/top-nav"
 import { Sidebar } from "@/components/sidebar"
@@ -53,10 +53,6 @@ export default function ReportsPage() {
   const [clients, setClients] = useState<{ id: string; name: string }[]>([])
   const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([])
 
-  const [shareUrl, setShareUrl] = useState<string | null>(null)
-  const [sharing, setSharing] = useState(false)
-  const [copied, setCopied] = useState(false)
-
   // grouping: "user" | "client" | "none"
   const [groupBy, setGroupBy] = useState<"user" | "client" | "none">("user")
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
@@ -77,7 +73,6 @@ export default function ReportsPage() {
   const fetchReport = useCallback(() => {
     if (!dateFrom || !dateTo) return
     setLoading(true)
-    setShareUrl(null)
     const params = new URLSearchParams({ dateFrom, dateTo })
     if (selectedClientId) params.set("clientId", selectedClientId)
     if (selectedUserId) params.set("userId", selectedUserId)
@@ -100,37 +95,6 @@ export default function ReportsPage() {
 
   // Auto-fetch on mount
   useEffect(() => { fetchReport() }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleShare = async () => {
-    setSharing(true)
-    try {
-      const token = getToken()
-      const res = await fetch("/api/reports/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({
-          dateFrom,
-          dateTo,
-          clientId: selectedClientId || null,
-          userId: selectedUserId || null,
-          title: `Report ${dateFrom} to ${dateTo}`,
-        }),
-      })
-      const data = await res.json()
-      if (data.token) {
-        const url = `${window.location.origin}/reports/shared/${data.token}`
-        setShareUrl(url)
-      }
-    } catch { /* silent */ }
-    finally { setSharing(false) }
-  }
-
-  const handleCopy = () => {
-    if (!shareUrl) return
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
@@ -184,29 +148,7 @@ export default function ReportsPage() {
                     <h1 className="text-2xl font-bold text-[#1D1D1F]">Work Reports</h1>
                     <p className="text-sm text-[#86868B] mt-0.5">Filter by date range, client, or team member and share with anyone</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {shareUrl ? (
-                      <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                        <span className="text-xs text-green-700 max-w-[260px] truncate">{shareUrl}</span>
-                        <button
-                          onClick={handleCopy}
-                          className="flex items-center gap-1 px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 text-xs rounded transition-colors font-medium"
-                        >
-                          {copied ? <Check className="w-3 h-3" /> : <Link className="w-3 h-3" />}
-                          {copied ? "Copied!" : "Copy"}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleShare}
-                        disabled={sharing || entries.length === 0}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#007AFF] text-white rounded-lg hover:opacity-90 disabled:opacity-50 text-sm font-medium transition-all"
-                      >
-                        <Link className="w-4 h-4" />
-                        {sharing ? "Generating..." : "Share Report"}
-                      </button>
-                    )}
-                  </div>
+                  <div />
                 </div>
               </div>
 
