@@ -33,7 +33,7 @@ export default function ContentTrackerPage() {
   }, [])
 
   return (
-    <div className="w-full max-w-7xl">
+    <div className="w-full min-w-full">
 
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
