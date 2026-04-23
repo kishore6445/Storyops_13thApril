@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSupabaseAdminClient } from "@/lib/db"
 import { verifyAuth } from "@/lib/auth"
+import { randomBytes } from "crypto"
 
 // POST /api/reports/share — create a shareable link
 export async function POST(request: NextRequest) {
@@ -17,11 +18,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "dateFrom and dateTo are required" }, { status: 400 })
     }
 
+    // Generate token in Node.js — Postgres encode() does not support base64url
+    const shareToken = randomBytes(24).toString("base64url")
+
     const supabase = getSupabaseAdminClient()
 
     const { data, error } = await supabase
       .from("report_shares")
       .insert({
+        share_token: shareToken,
         created_by: authResult.user.id,
         date_from: dateFrom,
         date_to: dateTo,
