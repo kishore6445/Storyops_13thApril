@@ -60,10 +60,11 @@ export async function GET(request: NextRequest) {
     const reportIds = reports.map((r: any) => r.id)
 
     // 2. Fetch time_entries for those reports
+    // Note: the column is "daily_report_id" (from create-pomodoro-tables.sql which superseded create-daily-reports-tables.sql)
     let entriesQuery = supabase
       .from("time_entries")
-      .select("id, report_id, client_id, sprint_id, task_id, hours, work_description, description, created_at")
-      .in("report_id", reportIds)
+      .select("id, daily_report_id, client_id, sprint_id, task_id, hours, work_description, description, created_at")
+      .in("daily_report_id", reportIds)
       .order("created_at", { ascending: false })
 
     if (clientId) {
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
     const reportMap = new Map(reports.map((r: any) => [r.id, r]))
 
     const enrichedEntries = entries.map((entry: any) => {
-      const report = reportMap.get(entry.report_id)
+      const report = reportMap.get(entry.daily_report_id)
       const userInfo = report ? userMap.get(report.user_id) : null
       return {
         id: entry.id,
