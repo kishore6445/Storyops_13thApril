@@ -24,6 +24,7 @@ export function InlineSprintCreator({
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   )
+  const [sprintStatus, setSprintStatus] = useState<"planning" | "active">("planning")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleCreateSprint = async () => {
@@ -43,7 +44,7 @@ export function InlineSprintCreator({
           name: sprintName,
           start_date: startDate,
           end_date: endDate,
-          status: "planning",
+          status: sprintStatus,
         }),
       })
 
@@ -52,6 +53,7 @@ export function InlineSprintCreator({
         setSprintName("")
         setStartDate(new Date().toISOString().split("T")[0])
         setEndDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0])
+        setSprintStatus("planning")
         setShowForm(false)
         onSprintCreated?.()
       }
@@ -144,6 +146,18 @@ export function InlineSprintCreator({
                 className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#1D1D1F] mb-1">Status</label>
+            <select
+              value={sprintStatus}
+              onChange={(e) => setSprintStatus(e.target.value as "planning" | "active")}
+              className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF] bg-white"
+            >
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+            </select>
           </div>
 
           <div className="flex gap-2">

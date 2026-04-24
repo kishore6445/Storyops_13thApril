@@ -22,6 +22,8 @@ interface Sprint {
   id: string
   name: string
   status: "planning" | "active" | "completed"
+  start_date: string
+  end_date: string
 }
 
 const fetcher = async (url: string) => {
