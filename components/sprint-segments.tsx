@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Plus, Calendar, Users, CheckCircle2, AlertCircle, Clock, X } from 'lucide-react'
+import { ChevronDown, Calendar, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Sprint {
@@ -20,6 +20,7 @@ interface Task {
   phase: string
   priority: 'low' | 'medium' | 'high'
   status: 'todo' | 'in_progress' | 'in_review' | 'done'
+  sprintId?: string
 }
 
 interface SprintSegmentsProps {
@@ -31,6 +32,26 @@ interface SprintSegmentsProps {
   isLoading?: boolean
 }
 
+function formatDate(dateStr: string) {
+  if (!dateStr) return ""
+  const d = new Date(dateStr)
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
+function SprintStatusBadge({ status }: { status: Sprint["status"] }) {
+  const config = {
+    active: { label: "Active", class: "bg-[#007AFF]/10 text-[#007AFF]" },
+    planning: { label: "Planning", class: "bg-[#FF9500]/10 text-[#FF9500]" },
+    completed: { label: "Completed", class: "bg-[#34C759]/10 text-[#34C759]" },
+  }
+  const { label, class: cls } = config[status]
+  return (
+    <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", cls)}>
+      {label}
+    </span>
+  )
+}
+
 export function SprintSegments({
   sprints,
   tasks,
@@ -39,171 +60,200 @@ export function SprintSegments({
   onCloseSprint,
   isLoading = false,
 }: SprintSegmentsProps) {
-  // Categorize sprints
+  const [showCompleted, setShowCompleted] = useState(false)
+
   const activeSprints = sprints.filter((s) => s.status === 'active')
-  const previousSprints = sprints.filter((s) => s.status === 'completed')
   const planningSprints = sprints.filter((s) => s.status === 'planning')
+  const completedSprints = sprints.filter((s) => s.status === 'completed')
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-24 bg-[#F5F5F7] rounded-xl animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  if (sprints.length === 0) {
+    return (
+      <div className="text-center py-12 bg-[#F5F5F7] rounded-xl">
+        <Clock className="w-8 h-8 text-[#D1D1D6] mx-auto mb-3" />
+        <p className="text-sm font-semibold text-[#1D1D1F]">No sprints yet</p>
+        <p className="text-xs text-[#86868B] mt-1">Create your first sprint below to get started</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {/* Overview Cards - Quick Sprint Status */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="text-xs text-blue-600 font-medium uppercase mb-1">Active</div>
-          <div className="text-2xl font-bold text-blue-900">{activeSprints.length}</div>
-          <div className="text-xs text-blue-600 mt-1">{tasks.filter(t => activeSprints.some(s => s.id === t.sprintId)).length} tasks</div>
-        </div>
 
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-          <div className="text-xs text-purple-600 font-medium uppercase mb-1">Planning</div>
-          <div className="text-2xl font-bold text-purple-900">{planningSprints.length}</div>
-          <div className="text-xs text-purple-600 mt-1">Next up</div>
-        </div>
-
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="text-xs text-gray-600 font-medium uppercase mb-1">Completed</div>
-          <div className="text-2xl font-bold text-gray-900">{previousSprints.length}</div>
-          <div className="text-xs text-gray-600 mt-1">Sprints</div>
-        </div>
-      </div>
-
-      {/* Active Sprints - Always Visible */}
+      {/* ── Active Sprints ── */}
       {activeSprints.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
+        <section>
+          <div className="flex items-center gap-2 mb-3">
             <Clock className="w-4 h-4 text-[#007AFF]" />
-            <h3 className="font-semibold text-[#1D1D1F] text-sm">Currently Running</h3>
+            <h3 className="text-sm font-bold text-[#1D1D1F]">Active</h3>
+            <span className="text-xs text-[#86868B]">({activeSprints.length})</span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {activeSprints.map((sprint) => {
               const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
-              const completedTasks = sprintTasks.filter(t => t.status === 'done').length
-              const progressPercent = sprintTasks.length > 0 ? (completedTasks / sprintTasks.length) * 100 : 0
+              const done = sprintTasks.filter(t => t.status === 'done').length
+              const pct = sprintTasks.length > 0 ? Math.round((done / sprintTasks.length) * 100) : 0
 
               return (
-                <div key={sprint.id} className="border border-[#E5E5E7] rounded-lg p-4 bg-white hover:shadow-sm transition-all">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-[#1D1D1F]">{sprint.name}</h4>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-[#86868B]">
-                        <Calendar className="w-3 h-3" />
-                        {sprint.start_date} → {sprint.end_date}
+                <div
+                  key={sprint.id}
+                  className="bg-white border border-[#E5E5E7] rounded-xl p-5 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <SprintStatusBadge status="active" />
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded text-xs font-medium">Active</span>
-                      {onCloseSprint && (
-                        <button
-                          onClick={() => onCloseSprint(sprint)}
-                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-all text-gray-500 hover:text-gray-700"
-                          title="Close sprint"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                      <h4 className="font-bold text-[#1D1D1F] text-base mt-1">{sprint.name}</h4>
+                      {(sprint.start_date || sprint.end_date) && (
+                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-[#86868B]">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>
+                            {sprint.start_date ? formatDate(sprint.start_date) : "—"}
+                            {" → "}
+                            {sprint.end_date ? formatDate(sprint.end_date) : "—"}
+                          </span>
+                        </div>
                       )}
                     </div>
+
+                    {/* Close Sprint — prominent */}
+                    {onCloseSprint && (
+                      <button
+                        onClick={() => onCloseSprint(sprint)}
+                        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#E5E5E7] text-xs font-semibold text-[#86868B] hover:border-[#FF3B30] hover:text-[#FF3B30] hover:bg-[#FF3B30]/5 transition-all"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        Close Sprint
+                      </button>
+                    )}
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#86868B]">Progress</span>
-                      <span className="text-[#1D1D1F] font-medium">{completedTasks}/{sprintTasks.length} tasks</span>
+                  {/* Progress */}
+                  {sprintTasks.length > 0 && (
+                    <div className="mt-4 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-[#86868B]">
+                        <span>{done} of {sprintTasks.length} tasks done</span>
+                        <span className="font-semibold text-[#1D1D1F]">{pct}%</span>
+                      </div>
+                      <div className="w-full bg-[#F0F0F0] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            pct === 100 ? "bg-[#34C759]" : "bg-[#007AFF]"
+                          )}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-[#E5E5E7] rounded-full h-1.5 overflow-hidden">
-                      <div 
-                        className="bg-blue-500 h-full transition-all duration-300"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Planning/Upcoming Sprints */}
+      {/* ── Planning Sprints ── */}
       {planningSprints.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[#FF9500]" />
-            <h3 className="font-semibold text-[#1D1D1F] text-sm">Upcoming Sprints</h3>
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="w-4 h-4 text-[#FF9500]" />
+            <h3 className="text-sm font-bold text-[#1D1D1F]">Upcoming</h3>
+            <span className="text-xs text-[#86868B]">({planningSprints.length})</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {planningSprints.map((sprint) => {
-              const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
-              return (
-                <div key={sprint.id} className="border border-[#E5E5E7] rounded-lg p-3 bg-[#FFFBF0] hover:bg-[#FFF8E6] transition-all">
-                  <h4 className="font-medium text-[#1D1D1F] text-sm truncate">{sprint.name}</h4>
-                  <div className="text-xs text-[#86868B] mt-1 line-clamp-1">{sprint.start_date}</div>
-                  <div className="mt-2 text-xs font-medium text-[#FF9500]">{sprintTasks.length} tasks planned</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {planningSprints.map((sprint) => (
+              <div
+                key={sprint.id}
+                className="bg-white border border-[#E5E5E7] rounded-xl p-4 hover:shadow-sm transition-all"
+              >
+                <SprintStatusBadge status="planning" />
+                <h4 className="font-bold text-[#1D1D1F] mt-2 text-sm">{sprint.name}</h4>
+                {sprint.start_date && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-xs text-[#86868B]">
+                    <Calendar className="w-3 h-3" />
+                    <span>Starts {formatDate(sprint.start_date)}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Completed Sprints — Collapsible ── */}
+      {completedSprints.length > 0 && (
+        <section>
+          <button
+            onClick={() => setShowCompleted(v => !v)}
+            className="flex items-center gap-2 w-full text-left group mb-3"
+          >
+            <CheckCircle2 className="w-4 h-4 text-[#34C759]" />
+            <h3 className="text-sm font-bold text-[#1D1D1F]">Completed</h3>
+            <span className="text-xs text-[#86868B]">({completedSprints.length})</span>
+            <ChevronDown className={cn(
+              "w-4 h-4 text-[#86868B] ml-auto transition-transform",
+              showCompleted && "rotate-180"
+            )} />
+          </button>
+
+          {showCompleted && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {completedSprints.map((sprint) => (
+                <div
+                  key={sprint.id}
+                  className="bg-[#FAFAFA] border border-[#E5E5E7] rounded-xl p-4"
+                >
+                  <SprintStatusBadge status="completed" />
+                  <h4 className="font-semibold text-[#1D1D1F] mt-2 text-sm">{sprint.name}</h4>
+                  {sprint.end_date && (
+                    <p className="text-xs text-[#86868B] mt-1">Closed {formatDate(sprint.end_date)}</p>
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Previous Sprints - Collapsible */}
-      {previousSprints.length > 0 && (
-        <div className="space-y-3">
-          <details className="group">
-            <summary className="cursor-pointer flex items-center gap-2 font-semibold text-[#1D1D1F] text-sm">
-              <CheckCircle2 className="w-4 h-4 text-[#34C759]" />
-              <span>Completed Sprints</span>
-              <ChevronDown className="w-4 h-4 text-[#86868B] group-open:rotate-180 transition-transform" />
-            </summary>
-            <div className="space-y-2 mt-3">
-              {previousSprints.map((sprint) => {
-                const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
-                return (
-                  <div key={sprint.id} className="border border-[#E5E5E7] rounded-lg p-3 bg-[#F5FFF5] text-sm">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-[#1D1D1F]">{sprint.name}</h4>
-                      <span className="text-xs bg-[#34C759]/10 text-[#34C759] px-2 py-0.5 rounded">Completed</span>
-                    </div>
-                    <div className="text-xs text-[#86868B] mt-1">{sprint.end_date}</div>
-                    <div className="text-xs text-[#34C759] font-medium mt-1">{sprintTasks.length} tasks delivered</div>
-                  </div>
-                )
-              })}
+              ))}
             </div>
-          </details>
-        </div>
+          )}
+        </section>
       )}
 
-      {/* Backlog Tasks */}
+      {/* ── Backlog ── */}
       {backlogTasks.length > 0 && (
-        <div className="space-y-3">
+        <section>
           <details className="group">
-            <summary className="cursor-pointer flex items-center gap-2 font-semibold text-[#1D1D1F] text-sm">
+            <summary className="cursor-pointer flex items-center gap-2 text-sm font-bold text-[#1D1D1F] mb-3 list-none">
               <AlertCircle className="w-4 h-4 text-[#86868B]" />
-              <span>Unscheduled ({backlogTasks.length})</span>
-              <ChevronDown className="w-4 h-4 text-[#86868B] group-open:rotate-180 transition-transform" />
+              Backlog
+              <span className="text-xs font-normal text-[#86868B]">({backlogTasks.length} unscheduled)</span>
+              <ChevronDown className="w-4 h-4 text-[#86868B] ml-auto group-open:rotate-180 transition-transform" />
             </summary>
-            <div className="space-y-2 mt-3 max-h-64 overflow-y-auto">
+            <div className="space-y-2 mt-2 max-h-64 overflow-y-auto">
               {backlogTasks.map((task) => (
-                <div key={task.id} className="border border-[#E5E5E7] rounded-lg p-2.5 bg-[#F5F5F7] text-sm hover:bg-[#E8E8ED] transition-all">
-                  <p className="font-medium text-[#1D1D1F]">{task.title}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-[#86868B]">
-                    <span className="bg-[#E5E5E7] px-2 py-0.5 rounded">{task.phase}</span>
-                  </div>
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 bg-[#F5F5F7] rounded-lg px-3 py-2.5 text-sm"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#86868B] flex-shrink-0" />
+                  <p className="text-[#1D1D1F] font-medium truncate">{task.title}</p>
+                  {task.phase && (
+                    <span className="ml-auto text-xs text-[#86868B] flex-shrink-0 bg-[#E5E5E7] px-2 py-0.5 rounded">
+                      {task.phase}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
           </details>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {activeSprints.length === 0 && planningSprints.length === 0 && (
-        <div className="text-center py-8 bg-[#F5F5F7] rounded-lg">
-          <Clock className="w-8 h-8 text-[#D1D1D6] mx-auto mb-2" />
-          <p className="text-sm font-medium text-[#1D1D1F]">No sprints yet</p>
-          <p className="text-xs text-[#86868B] mt-1">Create your first sprint to get started</p>
-        </div>
+        </section>
       )}
     </div>
   )

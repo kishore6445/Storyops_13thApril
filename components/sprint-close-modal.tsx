@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { X, CheckCircle2, ArrowRight, AlertCircle } from "lucide-react"
+import { X, CheckCircle2, ArrowRight, AlertCircle, Package, Sparkles, ChevronLeft } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface Task {
   id: string
@@ -19,9 +20,12 @@ interface SprintCloseModalProps {
   onClose: () => void
   sprint: Sprint | null
   tasks: Task[]
-  sprints: Sprint[] // For migration options
+  sprints: Sprint[]
   onSprintClosed: () => void
 }
+
+type Destination = "backlog" | "new-sprint"
+type Step = 1 | 2
 
 export function SprintCloseModal({
   isOpen,
@@ -31,52 +35,40 @@ export function SprintCloseModal({
   sprints,
   onSprintClosed,
 }: SprintCloseModalProps) {
-  const [selectedDestination, setSelectedDestination] = useState<"new-sprint" | "backlog">("backlog")
-  const [isClosing, setIsClosing] = useState(false)
+  const [step, setStep] = useState<Step>(1)
+  const [destination, setDestination] = useState<Destination>("backlog")
   const [newSprintName, setNewSprintName] = useState("")
+  const [isClosing, setIsClosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isInProgress = (status: Task["status"]) => status === "in-progress" || status === "in_progress"
-  const isInReview = (status: Task["status"]) => status === "in-review" || status === "in_review"
+  const isInProgress = (s: Task["status"]) => s === "in-progress" || s === "in_progress"
+  const isInReview = (s: Task["status"]) => s === "in-review" || s === "in_review"
 
-  // Count tasks by status
-  const tasksByStatus = {
-    done: tasks.filter((t) => t.status === "done"),
-    inProgress: tasks.filter((t) => isInProgress(t.status)),
-    inReview: tasks.filter((t) => isInReview(t.status)),
-    todo: tasks.filter((t) => t.status === "todo"),
+  const doneTasks = tasks.filter((t) => t.status === "done")
+  const pendingTasks = tasks.filter((t) => t.status === "todo" || isInProgress(t.status) || isInReview(t.status))
+  const totalPending = pendingTasks.length
+
+  const handleReset = () => {
+    setStep(1)
+    setDestination("backlog")
+    setNewSprintName("")
+    setError(null)
   }
 
-  const totalNeedsMigration = tasksByStatus.todo.length + tasksByStatus.inProgress.length + tasksByStatus.inReview.length
+  const handleClose = () => {
+    handleReset()
+    onClose()
+  }
 
-  const handleCloseSprint = async () => {
-    console.log("[v0] ════════════════════════════════════════════════")
-    console.log("[v0] SPRINT CLOSE WORKFLOW STARTED")
-    console.log("[v0] ════════════════════════════════════════════════")
-    console.log("[v0] Sprint Details:")
-    console.log("[v0]   - Sprint ID: ", sprint?.id)
-    console.log("[v0]   - Sprint Name: ", sprint?.name)
-    console.log("[v0]")
-    console.log("[v0] Task Summary:")
-    console.log("[v0]   - Done tasks (stay DONE): ", tasksByStatus.done.length)
-    console.log("[v0]   - In Progress tasks (to MIGRATE): ", tasksByStatus.inProgress.length)
-    console.log("[v0]   - In Review tasks (to MIGRATE): ", tasksByStatus.inReview.length)
-    console.log("[v0]   - Total tasks to migrate: ", totalNeedsMigration)
-    console.log("[v0]")
-    console.log("[v0] User Selection:")
-    console.log("[v0]   - Destination: ", selectedDestination)
-    if (selectedDestination === "new-sprint") {
-      console.log("[v0]   - New Sprint Name: ", newSprintName)
-    }
+  const canProceedToStep2 = () => {
+    if (totalPending === 0) return true
+    if (destination === "backlog") return true
+    if (destination === "new-sprint") return newSprintName.trim().length > 0
+    return false
+  }
 
-    if (!sprint) {
-      console.error("[v0] ERROR: No sprint selected")
-      return
-    }
-    if (selectedDestination === "new-sprint" && !newSprintName.trim()) {
-      setError("Please enter a name for the new sprint")
-      return
-    }
+  const handleConfirmClose = async () => {
+    if (!sprint) return
 
     setError(null)
     setIsClosing(true)
@@ -84,19 +76,10 @@ export function SprintCloseModal({
       const token = localStorage.getItem("sessionToken")
       const payload = {
         sprintId: sprint.id,
-        destination: selectedDestination,
-        newSprintName: selectedDestination === "new-sprint" ? newSprintName : null,
-        tasksToMigrate: [
-          ...tasksByStatus.todo.map((t) => t.id),
-          ...tasksByStatus.inProgress.map((t) => t.id),
-          ...tasksByStatus.inReview.map((t) => t.id),
-        ],
+        destination,
+        newSprintName: destination === "new-sprint" ? newSprintName.trim() : null,
+        tasksToMigrate: pendingTasks.map((t) => t.id),
       }
-      
-      console.log("[v0]")
-      console.log("[v0] SENDING REQUEST to /api/sprints/close")
-      console.log("[v0] Payload:", payload)
-      
       const response = await fetch("/api/sprints/close", {
         method: "POST",
         headers: {
@@ -106,38 +89,16 @@ export function SprintCloseModal({
         body: JSON.stringify(payload),
       })
 
-      console.log("[v0]")
-      console.log("[v0] API RESPONSE RECEIVED")
-      console.log("[v0] Status Code: ", response.status)
-      
       if (response.ok) {
-        const data = await response.json()
-        console.log("[v0] Response Data: ", data)
-        console.log("[v0]")
-        console.log("[v0] ✅ WORKFLOW SUCCESSFUL")
-        console.log("[v0] Sprint Status: 'completed'")
-        console.log("[v0] Done tasks: KEPT AS DONE")
-        if (selectedDestination === "backlog") {
-          console.log("[v0] Pending tasks: MOVED TO BACKLOG (sprint_id = null)")
-        } else {
-          console.log("[v0] Pending tasks: MOVED TO NEW SPRINT")
-          console.log("[v0] New Sprint ID: ", data.newSprintId)
-        }
-        console.log("[v0] ════════════════════════════════════════════════")
+        handleReset()
         onSprintClosed()
         onClose()
       } else {
         const data = await response.json()
-        console.error("[v0] ❌ API ERROR")
-        console.error("[v0] Error Response: ", data)
-        console.log("[v0] ════════════════════════════════════════════════")
-        setError(data.error || "Failed to close sprint")
+        setError(data.error || "Failed to close sprint. Please try again.")
       }
-    } catch (error) {
-      console.error("[v0] ❌ NETWORK ERROR")
-      console.error("[v0] Error: ", error)
-      console.log("[v0] ════════════════════════════════════════════════")
-      setError("Error closing sprint. Please try again.")
+    } catch {
+      setError("Network error. Please try again.")
     } finally {
       setIsClosing(false)
     }
@@ -146,191 +107,235 @@ export function SprintCloseModal({
   if (!isOpen || !sprint) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl shadow-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+
         {/* Header */}
-        <div className="p-6 border-b border-[#E5E5E7] flex items-center justify-between sticky top-0 bg-white">
-          <h3 className="text-lg font-semibold text-[#1D1D1F]">Close Sprint: {sprint.name}</h3>
+        <div className="flex items-center justify-between px-6 pt-6 pb-4">
+          <div>
+            {/* Step indicator */}
+            <div className="flex items-center gap-1.5 mb-1">
+              {([1, 2] as Step[]).map((s) => (
+                <div
+                  key={s}
+                  className={cn(
+                    "h-1 rounded-full transition-all",
+                    s === step ? "w-6 bg-[#007AFF]" : s < step ? "w-3 bg-[#007AFF]/40" : "w-3 bg-[#E5E5E7]"
+                  )}
+                />
+              ))}
+              <span className="text-xs text-[#86868B] ml-1">Step {step} of 2</span>
+            </div>
+            <h3 className="text-base font-bold text-[#1D1D1F]">
+              {step === 1 ? "Close Sprint" : "Confirm & Close"}
+            </h3>
+            <p className="text-xs text-[#86868B] mt-0.5 truncate max-w-xs">{sprint.name}</p>
+          </div>
           <button
-            onClick={onClose}
-            className="p-1 hover:bg-[#F5F5F7] rounded-lg transition-all"
+            onClick={handleClose}
+            className="p-1.5 hover:bg-[#F5F5F7] rounded-lg transition-all"
           >
-            <X className="w-5 h-5 text-[#86868B]" />
+            <X className="w-4 h-4 text-[#86868B]" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Error Alert */}
-          {error && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-900">{error}</p>
-            </div>
-          )}
+        {/* ─── STEP 1: Choose destination ─── */}
+        {step === 1 && (
+          <div className="px-6 pb-6 space-y-5">
 
-          {/* Task Breakdown */}
-          <div>
-            <h4 className="text-sm font-semibold text-[#1D1D1F] mb-4">Task Breakdown</h4>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Done Tasks */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-900">Done Tasks</span>
-                </div>
-                <p className="text-2xl font-bold text-green-900">{tasksByStatus.done.length}</p>
-                <p className="text-xs text-green-700 mt-1">These remain visible as completed</p>
+            {/* Task count summary — minimal */}
+            <div className="flex items-center gap-3 bg-[#F5F5F7] rounded-xl p-4">
+              <div className="text-center flex-1 border-r border-[#E5E5E7]">
+                <p className="text-2xl font-black text-[#34C759]">{doneTasks.length}</p>
+                <p className="text-xs text-[#86868B] mt-0.5">Done</p>
               </div>
+              <div className="text-center flex-1">
+                <p className="text-2xl font-black text-[#FF9500]">{totalPending}</p>
+                <p className="text-xs text-[#86868B] mt-0.5">To move</p>
+              </div>
+            </div>
 
-              {/* Items to Migrate */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowRight className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900">To Migrate</span>
-                </div>
-                <p className="text-2xl font-bold text-blue-900">{totalNeedsMigration}</p>
-                <p className="text-xs text-blue-700 mt-1">
-                  {tasksByStatus.todo.length} todo, {tasksByStatus.inProgress.length} in progress, {tasksByStatus.inReview.length} in review
+            {/* Only show destination choice if there are pending tasks */}
+            {totalPending > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide">
+                  Where should the {totalPending} pending {totalPending === 1 ? "task" : "tasks"} go?
                 </p>
-              </div>
-            </div>
-          </div>
 
-          {/* Task Details */}
-          {totalNeedsMigration > 0 && (
-            <div>
-              <h4 className="text-sm font-semibold text-[#1D1D1F] mb-3">Tasks to Migrate</h4>
-              <div className="bg-[#F5F5F7] rounded-lg p-4 max-h-48 overflow-y-auto space-y-2">
-                {tasksByStatus.todo.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm">
-                    <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium">
-                      Todo
-                    </span>
-                    <span className="text-[#1D1D1F]">{task.title}</span>
+                {/* Backlog option */}
+                <button
+                  onClick={() => setDestination("backlog")}
+                  className={cn(
+                    "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                    destination === "backlog"
+                      ? "border-[#007AFF] bg-[#007AFF]/5"
+                      : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                  )}
+                >
+                  <div className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                    destination === "backlog" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                  )}>
+                    <Package className={cn("w-4 h-4", destination === "backlog" ? "text-[#007AFF]" : "text-[#86868B]")} />
                   </div>
-                ))}
-                {tasksByStatus.inProgress.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm">
-                    <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">
-                      In Progress
-                    </span>
-                    <span className="text-[#1D1D1F]">{task.title}</span>
-                  </div>
-                ))}
-                {tasksByStatus.inReview.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                      In Review
-                    </span>
-                    <span className="text-[#1D1D1F]">{task.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Migration Destination */}
-          {totalNeedsMigration > 0 && (
-            <div>
-              <h4 className="text-sm font-semibold text-[#1D1D1F] mb-3">Move to...</h4>
-              <div className="space-y-3">
-                {/* New Sprint Option */}
-                <label className="flex items-start gap-3 p-3 border border-[#E5E5E7] rounded-lg hover:bg-[#F5F5F7] cursor-pointer transition-all">
-                  <input
-                    type="radio"
-                    name="destination"
-                    value="new-sprint"
-                    checked={selectedDestination === "new-sprint"}
-                    onChange={() => {
-                      setSelectedDestination("new-sprint")
-                      setError(null)
-                    }}
-                    className="w-4 h-4 mt-1"
-                  />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-[#1D1D1F]">Create New Sprint</p>
-                    <p className="text-xs text-[#86868B]">Create a new sprint and move tasks there</p>
+                    <p className={cn("text-sm font-semibold", destination === "backlog" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                      Move to Backlog
+                    </p>
+                    <p className="text-xs text-[#86868B] mt-0.5">Reassess priorities in next planning session</p>
                   </div>
-                </label>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                    destination === "backlog" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                  )}>
+                    {destination === "backlog" && (
+                      <div className="w-full h-full rounded-full bg-white scale-[0.4]" />
+                    )}
+                  </div>
+                </button>
 
-                {/* New Sprint Name Input */}
-                {selectedDestination === "new-sprint" && (
-                  <div className="ml-7 mb-3">
+                {/* New Sprint option */}
+                <button
+                  onClick={() => setDestination("new-sprint")}
+                  className={cn(
+                    "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                    destination === "new-sprint"
+                      ? "border-[#007AFF] bg-[#007AFF]/5"
+                      : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                  )}
+                >
+                  <div className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                    destination === "new-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                  )}>
+                    <Sparkles className={cn("w-4 h-4", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
+                  </div>
+                  <div className="flex-1">
+                    <p className={cn("text-sm font-semibold", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                      Create New Sprint
+                    </p>
+                    <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a new sprint</p>
+                  </div>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                    destination === "new-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                  )}>
+                    {destination === "new-sprint" && (
+                      <div className="w-full h-full rounded-full bg-white scale-[0.4]" />
+                    )}
+                  </div>
+                </button>
+
+                {/* New sprint name — only shows when selected */}
+                {destination === "new-sprint" && (
+                  <div className="pt-1">
                     <input
                       type="text"
                       value={newSprintName}
                       onChange={(e) => setNewSprintName(e.target.value)}
-                      placeholder="Sprint name (e.g., Sprint 2 - Next Week)"
-                      className="w-full px-3 py-2 border border-[#E5E5E7] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
+                      placeholder={`e.g., ${sprint.name.replace(/\d+/, (n) => String(Number(n) + 1)) || "Sprint 2"}`}
+                      autoFocus
+                      className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
                     />
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="text-center py-3">
+                <CheckCircle2 className="w-8 h-8 text-[#34C759] mx-auto mb-2" />
+                <p className="text-sm font-semibold text-[#1D1D1F]">All tasks are done!</p>
+                <p className="text-xs text-[#86868B] mt-1">Nothing to migrate — just closing the sprint.</p>
+              </div>
+            )}
 
-                {/* Backlog Option */}
-                <label className="flex items-start gap-3 p-3 border border-[#E5E5E7] rounded-lg hover:bg-[#F5F5F7] cursor-pointer transition-all">
-                  <input
-                    type="radio"
-                    name="destination"
-                    value="backlog"
-                    checked={selectedDestination === "backlog"}
-                    onChange={() => {
-                      setSelectedDestination("backlog")
-                      setError(null)
-                    }}
-                    className="w-4 h-4 mt-1"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#1D1D1F]">Move to Backlog</p>
-                    <p className="text-xs text-[#86868B]">Keep tasks in backlog for later planning</p>
+            <button
+              onClick={() => setStep(2)}
+              disabled={!canProceedToStep2()}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#007AFF] text-white font-semibold text-sm rounded-xl hover:opacity-90 disabled:opacity-40 transition-all"
+            >
+              Review & Confirm
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ─── STEP 2: Review & Confirm ─── */}
+        {step === 2 && (
+          <div className="px-6 pb-6 space-y-5">
+
+            {/* What will happen */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide">What will happen</p>
+              <div className="bg-[#F5F5F7] rounded-xl p-4 space-y-3">
+                {doneTasks.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#34C759]/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#34C759]" />
+                    </div>
+                    <p className="text-sm text-[#1D1D1F]">
+                      <span className="font-bold">{doneTasks.length}</span> completed {doneTasks.length === 1 ? "task" : "tasks"} archived
+                    </p>
                   </div>
-                </label>
+                )}
+                {totalPending > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#007AFF]/10 flex items-center justify-center flex-shrink-0">
+                      <ArrowRight className="w-3.5 h-3.5 text-[#007AFF]" />
+                    </div>
+                    <p className="text-sm text-[#1D1D1F]">
+                      <span className="font-bold">{totalPending}</span> pending {totalPending === 1 ? "task" : "tasks"} moved to{" "}
+                      <span className="font-bold">
+                        {destination === "backlog" ? "Backlog" : `"${newSprintName}"`}
+                      </span>
+                    </p>
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-[#86868B]/10 flex items-center justify-center flex-shrink-0">
+                    <X className="w-3.5 h-3.5 text-[#86868B]" />
+                  </div>
+                  <p className="text-sm text-[#1D1D1F]">
+                    Sprint <span className="font-bold">&ldquo;{sprint.name}&rdquo;</span> marked as completed
+                  </p>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              <span className="font-semibold">{tasksByStatus.done.length} tasks</span> will remain marked done.
-              {totalNeedsMigration > 0 && (
-                <>
-                  {" "}
-                  <span className="font-semibold">{totalNeedsMigration} tasks</span> will be moved to{" "}
-                  <span className="font-semibold">
-                    {selectedDestination === "new-sprint" ? "a new sprint" : "the backlog"}
-                  </span>
-                  .
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-[#E5E5E7] flex gap-3 sticky bottom-0 bg-white">
-          <button
-            onClick={onClose}
-            disabled={isClosing}
-            className="flex-1 px-4 py-2 bg-white border border-[#E5E5E7] text-[#1D1D1F] rounded-lg font-medium hover:bg-[#F5F5F7] disabled:opacity-50 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCloseSprint}
-            disabled={isClosing || (totalNeedsMigration > 0 && selectedDestination === "new-sprint" && !newSprintName.trim())}
-            className="flex-1 px-4 py-2 bg-[#007AFF] text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-          >
-            {isClosing ? (
-              <>
-                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Closing...
-              </>
-            ) : (
-              "Close Sprint"
+            {/* Error */}
+            {error && (
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-800">{error}</p>
+              </div>
             )}
-          </button>
-        </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setStep(1); setError(null) }}
+                disabled={isClosing}
+                className="flex items-center gap-1.5 px-4 py-3 border border-[#E5E5E7] text-[#1D1D1F] rounded-xl text-sm font-semibold hover:bg-[#F5F5F7] disabled:opacity-50 transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+              <button
+                onClick={handleConfirmClose}
+                disabled={isClosing}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF3B30] text-white font-semibold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                {isClosing ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Closing...
+                  </>
+                ) : (
+                  "Confirm & Close Sprint"
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

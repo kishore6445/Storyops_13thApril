@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, Clock, CheckCircle2, X, TrendingUp, AlertTriangle, Zap } from "lucide-react"
+import { AlertTriangle, Zap, TrendingUp, X, ChevronRight, LayoutGrid, List } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { InlineSprintCreator } from "./inline-sprint-creator"
 import { SprintSegments } from "./sprint-segments"
@@ -24,10 +24,13 @@ interface Sprint {
   status: "planning" | "active" | "completed"
 }
 
-interface Task {
-  id: string
-  title: string
-  status: "todo" | "in-progress" | "in-review" | "done"
+const fetcher = async (url: string) => {
+  const token = localStorage.getItem("sessionToken")
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error("Failed to fetch")
+  return res.json()
 }
 
 export function ClientOverview() {
@@ -36,35 +39,20 @@ export function ClientOverview() {
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
   const [isCloseSprintModalOpen, setIsCloseSprintModalOpen] = useState(false)
   const [selectedSprintForClose, setSelectedSprintForClose] = useState<Sprint | null>(null)
+  const [clientListCollapsed, setClientListCollapsed] = useState(false)
 
-  // Fetch clients from API
   const { data: clientsData, isLoading: clientsLoading, mutate: mutatePendingClients } = useSWR(
     "/api/clients/pending",
-    async (url) => {
-      const token = localStorage.getItem("sessionToken")
-      const res = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!res.ok) throw new Error("Failed to fetch clients")
-      return res.json()
-    }
+    fetcher
   )
 
-  // Fetch sprints when a client is selected
   const { data: sprintsData, mutate: mutateSprints } = useSWR(
     selectedClientId ? `/api/sprints?clientId=${selectedClientId}` : null,
-    async (url) => {
-      const token = localStorage.getItem("sessionToken")
-      const res = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!res.ok) throw new Error("Failed to fetch sprints")
-      return res.json()
-    }
+    fetcher
   )
 
-  const clients = clientsData?.clients || []
-  const sprints = sprintsData?.sprints || []
+  const clients: ClientPending[] = clientsData?.clients || []
+  const sprints: Sprint[] = sprintsData?.sprints || []
   const selectedClient = clients.find((c) => c.clientId === selectedClientId)
 
   const sortedClients = [...clients].sort((a, b) => {
@@ -83,210 +71,208 @@ export function ClientOverview() {
     mutatePendingClients()
   }
 
+  const totalPending = clients.reduce((s, c) => s + c.pendingTaskCount, 0)
+  const totalOverdue = clients.reduce((s, c) => s + c.overdueTasks, 0)
+
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-full">
-      {/* LEFT COLUMN: Clients List (Primary) */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Header */}
-        <div className="mb-8 flex-shrink-0">
-          <h1 className="text-3xl font-semibold text-[#1D1D1F] mb-2">Client Overview</h1>
-          <p className="text-sm text-[#86868B]">Track pending work and prioritize your focus</p>
+    <div className="flex h-full min-h-0 gap-0">
+
+      {/* ─── LEFT PANEL: Clients ─── */}
+      <div
+        className={cn(
+          "flex flex-col flex-shrink-0 border-r border-[#E5E5E7] transition-all duration-300 bg-[#FAFAFA]",
+          clientListCollapsed ? "w-14" : selectedClientId ? "w-72" : "w-full max-w-2xl mx-auto"
+        )}
+      >
+        {/* Panel Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[#E5E5E7]">
+          {!clientListCollapsed && (
+            <div>
+              <h1 className="text-base font-bold text-[#1D1D1F]">Sprint Management</h1>
+              <p className="text-xs text-[#86868B] mt-0.5">{clients.length} clients</p>
+            </div>
+          )}
+          {selectedClientId && (
+            <button
+              onClick={() => setClientListCollapsed(v => !v)}
+              className="p-1.5 hover:bg-[#E5E5E7] rounded-lg transition-all ml-auto"
+              title={clientListCollapsed ? "Expand client list" : "Collapse client list"}
+            >
+              <ChevronRight className={cn("w-4 h-4 text-[#86868B] transition-transform", clientListCollapsed ? "" : "rotate-180")} />
+            </button>
+          )}
         </div>
 
-        {/* Summary Stats - High Level */}
-        <div className="grid grid-cols-3 gap-3 mb-8 flex-shrink-0">
-          {/* Total Clients */}
-          <div className="bg-gradient-to-br from-[#F5F5F7] to-[#EFEFEF] border border-[#E5E5E7] rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wide">Total Clients</span>
-              <TrendingUp className="w-4 h-4 text-[#007AFF]" />
-            </div>
-            <p className="text-2xl font-bold text-[#1D1D1F]">{clients.length}</p>
-          </div>
-
-          {/* Total Pending Tasks */}
-          <div className="bg-gradient-to-br from-[#E3F2FF] to-[#DCEAFF] border border-[#007AFF]/20 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#0051CC] uppercase tracking-wide">Pending</span>
-              <Zap className="w-4 h-4 text-[#007AFF]" />
-            </div>
-            <p className="text-2xl font-bold text-[#007AFF]">
-              {clients.reduce((sum, c) => sum + c.pendingTaskCount, 0)}
-            </p>
-          </div>
-
-          {/* Total Overdue */}
-          <div className="bg-gradient-to-br from-[#FFE5E5] to-[#FFDADA] border border-[#FF3B30]/20 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-[#B91C1C] uppercase tracking-wide">Overdue</span>
-              <AlertTriangle className="w-4 h-4 text-[#FF3B30]" />
-            </div>
-            <p className="text-2xl font-bold text-[#FF3B30]">
-              {clients.reduce((sum, c) => sum + c.overdueTasks, 0)}
-            </p>
-          </div>
-        </div>
-
-        {/* Sort Controls */}
-        <div className="mb-6 flex-shrink-0">
-          <p className="text-xs font-medium text-[#86868B] mb-3 uppercase tracking-wide">Sort by</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSortBy("pending")}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                sortBy === "pending"
-                  ? "bg-[#007AFF] text-white shadow-sm"
-                  : "bg-white border border-[#E5E5E7] text-[#1D1D1F] hover:border-[#D1D1D6]"
-              )}
-            >
-              Most Pending
-            </button>
-            <button
-              onClick={() => setSortBy("overdue")}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                sortBy === "overdue"
-                  ? "bg-[#FF3B30] text-white shadow-sm"
-                  : "bg-white border border-[#E5E5E7] text-[#1D1D1F] hover:border-[#D1D1D6]"
-              )}
-            >
-              Most Overdue
-            </button>
-            <button
-              onClick={() => setSortBy("name")}
-              className={cn(
-                "px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                sortBy === "name"
-                  ? "bg-[#34C759] text-white shadow-sm"
-                  : "bg-white border border-[#E5E5E7] text-[#1D1D1F] hover:border-[#D1D1D6]"
-              )}
-            >
-              By Name
-            </button>
-          </div>
-        </div>
-
-        {/* Clients List - Scrollable */}
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-3 pr-2">
-          {sortedClients.map((client) => {
-            const isSelected = selectedClientId === client.clientId
-            const hasOverdue = client.overdueTasks > 0
-
-            return (
-              <div
-                key={client.clientId}
-                onClick={() => setSelectedClientId(client.clientId)}
-                className={cn(
-                  "rounded-lg border-2 transition-all cursor-pointer group",
-                  isSelected
-                    ? "border-[#007AFF] bg-[#F0F7FF] shadow-sm"
-                    : "border-[#E5E5E7] bg-white hover:border-[#D1D1D6] hover:shadow-sm"
-                )}
-              >
-                <div className="p-4">
-                  {/* Client Name & Phase */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-[#1D1D1F] truncate">{client.clientName}</h3>
-                      <p className="text-xs text-[#86868B] mt-1">{client.currentPhase}</p>
-                    </div>
-                    {hasOverdue && (
-                      <div className="flex-shrink-0 p-1.5 bg-[#FF3B30]/10 rounded-lg">
-                        <AlertTriangle className="w-4 h-4 text-[#FF3B30]" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Main Metric - Pending Count (Prominent) */}
-                  <div className="mb-3 p-3 bg-[#F5F5F7] rounded-lg">
-                    <p className="text-xs text-[#86868B] font-medium mb-1">PENDING TASKS</p>
-                    <p className="text-3xl font-bold text-[#007AFF]">{client.pendingTaskCount}</p>
-                  </div>
-
-                  {/* Secondary Stats - Horizontal */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div
-                      className={cn(
-                        "rounded p-2 text-center",
-                        hasOverdue ? "bg-[#FF3B30]/10" : "bg-[#F5F5F7]"
-                      )}
-                    >
-                      <p className="text-xs text-[#86868B] font-medium">Overdue</p>
-                      <p
-                        className={cn(
-                          "text-lg font-semibold mt-1",
-                          hasOverdue ? "text-[#FF3B30]" : "text-[#34C759]"
-                        )}
-                      >
-                        {client.overdueTasks}
-                      </p>
-                    </div>
-                    <div className="bg-[#34C759]/10 rounded p-2 text-center">
-                      <p className="text-xs text-[#86868B] font-medium">Due Today</p>
-                      <p className="text-lg font-semibold text-[#34C759] mt-1">{client.tasksDueToday}</p>
-                    </div>
-                  </div>
-
-                  {/* Last Activity */}
-                  <p className="text-xs text-[#86868B]">Updated: {client.lastActivity}</p>
-
-                  {/* CTA - Only on hover/selected */}
-                  {isSelected && (
-                    <button className="w-full mt-4 py-2 bg-[#007AFF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all">
-                      View Sprint Details
-                    </button>
-                  )}
+        {!clientListCollapsed && (
+          <>
+            {/* Summary Bar */}
+            <div className="flex gap-2 px-4 py-3 border-b border-[#E5E5E7]">
+              <div className="flex-1 flex items-center gap-2 bg-[#007AFF]/8 rounded-lg px-3 py-2">
+                <Zap className="w-3.5 h-3.5 text-[#007AFF]" />
+                <div>
+                  <p className="text-[10px] text-[#007AFF] font-semibold uppercase tracking-wide">Pending</p>
+                  <p className="text-lg font-bold text-[#007AFF] leading-none">{totalPending}</p>
                 </div>
               </div>
-            )
-          })}
-        </div>
+              <div className="flex-1 flex items-center gap-2 bg-[#FF3B30]/8 rounded-lg px-3 py-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-[#FF3B30]" />
+                <div>
+                  <p className="text-[10px] text-[#FF3B30] font-semibold uppercase tracking-wide">Overdue</p>
+                  <p className="text-lg font-bold text-[#FF3B30] leading-none">{totalOverdue}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sort Pills */}
+            <div className="flex gap-1.5 px-4 py-3 border-b border-[#E5E5E7]">
+              {(["pending", "overdue", "name"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSortBy(s)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-xs font-semibold transition-all",
+                    sortBy === s
+                      ? "bg-[#1D1D1F] text-white"
+                      : "bg-[#E5E5E7] text-[#86868B] hover:text-[#1D1D1F]"
+                  )}
+                >
+                  {s === "pending" ? "Most Pending" : s === "overdue" ? "Overdue" : "A–Z"}
+                </button>
+              ))}
+            </div>
+
+            {/* Client List */}
+            <div className="flex-1 overflow-y-auto">
+              {clientsLoading ? (
+                <div className="px-4 py-8 text-center text-sm text-[#86868B]">Loading clients...</div>
+              ) : sortedClients.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-[#86868B]">No clients found</div>
+              ) : (
+                sortedClients.map((client) => {
+                  const isSelected = selectedClientId === client.clientId
+                  const hasOverdue = client.overdueTasks > 0
+                  return (
+                    <button
+                      key={client.clientId}
+                      onClick={() => {
+                        setSelectedClientId(client.clientId)
+                        setClientListCollapsed(false)
+                      }}
+                      className={cn(
+                        "w-full text-left px-4 py-3.5 border-b border-[#F0F0F0] transition-all group",
+                        isSelected
+                          ? "bg-[#007AFF]/6 border-l-2 border-l-[#007AFF]"
+                          : "hover:bg-white border-l-2 border-l-transparent"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className={cn(
+                            "text-sm font-semibold truncate",
+                            isSelected ? "text-[#007AFF]" : "text-[#1D1D1F]"
+                          )}>
+                            {client.clientName}
+                          </p>
+                          <p className="text-xs text-[#86868B] mt-0.5 truncate">{client.currentPhase}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {hasOverdue && (
+                            <span className="flex items-center gap-1 text-xs font-bold text-[#FF3B30]">
+                              <AlertTriangle className="w-3 h-3" />
+                              {client.overdueTasks}
+                            </span>
+                          )}
+                          <span className={cn(
+                            "text-xs font-bold px-2 py-0.5 rounded-full",
+                            client.pendingTaskCount > 0
+                              ? "bg-[#007AFF]/10 text-[#007AFF]"
+                              : "bg-[#E5E5E7] text-[#86868B]"
+                          )}>
+                            {client.pendingTaskCount}
+                          </span>
+                          <ChevronRight className={cn("w-3.5 h-3.5 text-[#D1D1D6] group-hover:text-[#86868B] transition-all", isSelected && "text-[#007AFF]")} />
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Collapsed state — show client initials vertically */}
+        {clientListCollapsed && (
+          <div className="flex-1 overflow-y-auto py-2 flex flex-col items-center gap-1">
+            {sortedClients.map((client) => {
+              const isSelected = selectedClientId === client.clientId
+              return (
+                <button
+                  key={client.clientId}
+                  onClick={() => {
+                    setSelectedClientId(client.clientId)
+                    setClientListCollapsed(false)
+                  }}
+                  title={client.clientName}
+                  className={cn(
+                    "w-9 h-9 rounded-lg text-xs font-bold transition-all",
+                    isSelected ? "bg-[#007AFF] text-white" : "bg-[#E5E5E7] text-[#86868B] hover:bg-[#D1D1D6]"
+                  )}
+                >
+                  {client.clientName.charAt(0).toUpperCase()}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      {/* RIGHT COLUMN: Sprint Details (Secondary) */}
-      {selectedClientId && selectedClient && (
-        <div className="w-full lg:w-96 flex flex-col min-h-0 bg-[#FAFBFC] border-l border-[#E5E5E7] pl-8 lg:pl-0 lg:border-l lg:border-[#E5E5E7] pt-20 lg:pt-0">
-          {/* Header */}
-          <div className="flex items-center justify-between gap-3 mb-6 flex-shrink-0">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-semibold text-[#1D1D1F] truncate">{selectedClient.clientName}</h2>
-              <p className="text-xs text-[#86868B] mt-1">{selectedClient.currentPhase}</p>
+      {/* ─── RIGHT PANEL: Sprint Details ─── */}
+      {selectedClientId && selectedClient ? (
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
+          {/* Right Panel Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E5E7] bg-white flex-shrink-0">
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#1D1D1F]">{selectedClient.clientName}</h2>
+                <p className="text-xs text-[#86868B] mt-0.5">{selectedClient.currentPhase}</p>
+              </div>
+              {/* Quick stats inline */}
+              <div className="hidden md:flex items-center gap-3 ml-4">
+                <div className="flex items-center gap-1.5 bg-[#007AFF]/8 px-3 py-1.5 rounded-lg">
+                  <Zap className="w-3.5 h-3.5 text-[#007AFF]" />
+                  <span className="text-sm font-bold text-[#007AFF]">{selectedClient.pendingTaskCount}</span>
+                  <span className="text-xs text-[#007AFF]">pending</span>
+                </div>
+                {selectedClient.overdueTasks > 0 && (
+                  <div className="flex items-center gap-1.5 bg-[#FF3B30]/8 px-3 py-1.5 rounded-lg">
+                    <AlertTriangle className="w-3.5 h-3.5 text-[#FF3B30]" />
+                    <span className="text-sm font-bold text-[#FF3B30]">{selectedClient.overdueTasks}</span>
+                    <span className="text-xs text-[#FF3B30]">overdue</span>
+                  </div>
+                )}
+                {selectedClient.tasksDueToday > 0 && (
+                  <div className="flex items-center gap-1.5 bg-[#34C759]/8 px-3 py-1.5 rounded-lg">
+                    <span className="text-sm font-bold text-[#34C759]">{selectedClient.tasksDueToday}</span>
+                    <span className="text-xs text-[#34C759]">due today</span>
+                  </div>
+                )}
+              </div>
             </div>
             <button
               onClick={() => setSelectedClientId(null)}
-              className="flex-shrink-0 p-2 hover:bg-[#E5E5E7] rounded-lg transition-all"
+              className="p-2 hover:bg-[#F5F5F7] rounded-lg transition-all"
             >
-              <X className="w-5 h-5 text-[#86868B]" />
+              <X className="w-4 h-4 text-[#86868B]" />
             </button>
           </div>
 
-          {/* Sprint Overview Stats */}
-          <div className="space-y-3 mb-8 flex-shrink-0">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div className="text-xs text-blue-600 font-medium uppercase mb-1">Active Sprints</div>
-              <div className="text-2xl font-bold text-blue-900">
-                {sprints.filter((s) => s.status === "active").length}
-              </div>
-            </div>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <div className="text-xs text-orange-600 font-medium uppercase mb-1">Planning</div>
-              <div className="text-2xl font-bold text-orange-900">
-                {sprints.filter((s) => s.status === "planning").length}
-              </div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="text-xs text-green-600 font-medium uppercase mb-1">Completed</div>
-              <div className="text-2xl font-bold text-green-900">
-                {sprints.filter((s) => s.status === "completed").length}
-              </div>
-            </div>
-          </div>
+          {/* Sprint Content — scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto px-6 py-6 space-y-8">
 
-          {/* Sprint Management */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-[#1D1D1F] mb-4">Sprint Management</h3>
+              {/* Sprint List */}
               <SprintSegments
                 sprints={sprints}
                 tasks={[]}
@@ -294,20 +280,30 @@ export function ClientOverview() {
                 isLoading={false}
                 onCloseSprint={handleCloseSprint}
               />
-            </div>
 
-            {/* Create Sprint */}
-            <div className="bg-white border border-[#E5E5E7] rounded-lg p-4">
-              <InlineSprintCreator
-                clientId={selectedClientId}
-                sprints={sprints}
-                selectedSprintId={selectedSprintId}
-                onSprintChange={setSelectedSprintId}
-                onSprintCreated={() => mutateSprints()}
-              />
+              {/* Divider + Create Sprint */}
+              <div className="pt-2 border-t border-[#E5E5E7]">
+                <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-4">New Sprint</p>
+                <InlineSprintCreator
+                  clientId={selectedClientId}
+                  sprints={sprints}
+                  selectedSprintId={selectedSprintId}
+                  onSprintChange={setSelectedSprintId}
+                  onSprintCreated={() => mutateSprints()}
+                />
+              </div>
+
             </div>
           </div>
         </div>
+      ) : !clientListCollapsed && (
+        /* Empty state when no client selected and list is showing full-width */
+        <div className="hidden" />
+      )}
+
+      {selectedClientId === null && (
+        /* Full-width empty state when nothing selected */
+        <div className="hidden" />
       )}
 
       {/* Sprint Close Modal */}
