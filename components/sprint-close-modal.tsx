@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, CheckCircle2, ArrowRight, AlertCircle, Package, Sparkles, ChevronLeft } from "lucide-react"
+import { X, CheckCircle2, ArrowRight, AlertCircle, Package, Sparkles, ChevronLeft, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Task {
@@ -139,112 +139,194 @@ export function SprintCloseModal({
           </button>
         </div>
 
-        {/* ─── STEP 1: Choose destination ─── */}
+        {/* ─── STEP 1: Task Triage ─── */}
         {step === 1 && (
           <div className="px-6 pb-6 space-y-5">
 
-            {/* Task count summary — minimal */}
-            <div className="flex items-center gap-3 bg-[#F5F5F7] rounded-xl p-4">
-              <div className="text-center flex-1 border-r border-[#E5E5E7]">
-                <p className="text-2xl font-black text-[#34C759]">{doneTasks.length}</p>
-                <p className="text-xs text-[#86868B] mt-0.5">Done</p>
-              </div>
-              <div className="text-center flex-1">
-                <p className="text-2xl font-black text-[#FF9500]">{totalPending}</p>
-                <p className="text-xs text-[#86868B] mt-0.5">To move</p>
-              </div>
-            </div>
-
-            {/* Only show destination choice if there are pending tasks */}
-            {totalPending > 0 ? (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide">
-                  Where should the {totalPending} pending {totalPending === 1 ? "task" : "tasks"} go?
+            {/* Warning for large pending count */}
+            {totalPending > 50 && (
+              <div className="flex items-start gap-2 p-3 bg-[#FF9500]/8 border border-[#FF9500]/20 rounded-xl">
+                <AlertTriangle className="w-4 h-4 text-[#FF9500] flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-[#1D1D1F]">
+                  <span className="font-bold">{totalPending} pending tasks</span> — consider reviewing before closing.
                 </p>
-
-                {/* Backlog option */}
-                <button
-                  onClick={() => setDestination("backlog")}
-                  className={cn(
-                    "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                    destination === "backlog"
-                      ? "border-[#007AFF] bg-[#007AFF]/5"
-                      : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
-                  )}
-                >
-                  <div className={cn(
-                    "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                    destination === "backlog" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
-                  )}>
-                    <Package className={cn("w-4 h-4", destination === "backlog" ? "text-[#007AFF]" : "text-[#86868B]")} />
-                  </div>
-                  <div className="flex-1">
-                    <p className={cn("text-sm font-semibold", destination === "backlog" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
-                      Move to Backlog
-                    </p>
-                    <p className="text-xs text-[#86868B] mt-0.5">Reassess priorities in next planning session</p>
-                  </div>
-                  <div className={cn(
-                    "w-4 h-4 rounded-full border-2 flex-shrink-0",
-                    destination === "backlog" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
-                  )}>
-                    {destination === "backlog" && (
-                      <div className="w-full h-full rounded-full bg-white scale-[0.4]" />
-                    )}
-                  </div>
-                </button>
-
-                {/* New Sprint option */}
-                <button
-                  onClick={() => setDestination("new-sprint")}
-                  className={cn(
-                    "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                    destination === "new-sprint"
-                      ? "border-[#007AFF] bg-[#007AFF]/5"
-                      : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
-                  )}
-                >
-                  <div className={cn(
-                    "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                    destination === "new-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
-                  )}>
-                    <Sparkles className={cn("w-4 h-4", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
-                  </div>
-                  <div className="flex-1">
-                    <p className={cn("text-sm font-semibold", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
-                      Create New Sprint
-                    </p>
-                    <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a new sprint</p>
-                  </div>
-                  <div className={cn(
-                    "w-4 h-4 rounded-full border-2 flex-shrink-0",
-                    destination === "new-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
-                  )}>
-                    {destination === "new-sprint" && (
-                      <div className="w-full h-full rounded-full bg-white scale-[0.4]" />
-                    )}
-                  </div>
-                </button>
-
-                {/* New sprint name — only shows when selected */}
-                {destination === "new-sprint" && (
-                  <div className="pt-1">
-                    <input
-                      type="text"
-                      value={newSprintName}
-                      onChange={(e) => setNewSprintName(e.target.value)}
-                      placeholder={`e.g., ${sprint.name.replace(/\d+/, (n) => String(Number(n) + 1)) || "Sprint 2"}`}
-                      autoFocus
-                      className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
-                    />
-                  </div>
-                )}
               </div>
+            )}
+
+            {/* 3-column task triage — only if there are pending tasks */}
+            {totalPending > 0 ? (
+              <>
+                <div>
+                  <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-3">
+                    Tasks to move ({totalPending})
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* To Do column */}
+                    {(() => {
+                      const col = pendingTasks.filter(t => t.status === "todo")
+                      return (
+                        <div className="bg-[#F5F5F7] rounded-xl p-3 min-h-[80px]">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-[#D1D1D6]" />
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wide">To Do</span>
+                            <span className="text-[10px] text-[#86868B] ml-auto font-semibold">{col.length}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {col.slice(0, 4).map(t => (
+                              <div key={t.id} className="flex items-center gap-1.5">
+                                <div className="w-1 h-1 rounded-full bg-[#D1D1D6] flex-shrink-0" />
+                                <p className="text-[11px] text-[#1D1D1F] truncate leading-tight">{t.title}</p>
+                              </div>
+                            ))}
+                            {col.length > 4 && (
+                              <p className="text-[10px] text-[#86868B] pl-2.5">+{col.length - 4} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* In Progress column */}
+                    {(() => {
+                      const col = pendingTasks.filter(t => isInProgress(t.status))
+                      return (
+                        <div className="bg-[#007AFF]/5 rounded-xl p-3 min-h-[80px]">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-[#007AFF]" />
+                            <span className="text-[10px] font-bold text-[#007AFF] uppercase tracking-wide">Active</span>
+                            <span className="text-[10px] text-[#007AFF] ml-auto font-semibold">{col.length}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {col.slice(0, 4).map(t => (
+                              <div key={t.id} className="flex items-center gap-1.5">
+                                <div className="w-1 h-1 rounded-full bg-[#007AFF] flex-shrink-0" />
+                                <p className="text-[11px] text-[#1D1D1F] truncate leading-tight">{t.title}</p>
+                              </div>
+                            ))}
+                            {col.length > 4 && (
+                              <p className="text-[10px] text-[#007AFF] pl-2.5">+{col.length - 4} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* In Review column */}
+                    {(() => {
+                      const col = pendingTasks.filter(t => isInReview(t.status))
+                      return (
+                        <div className="bg-[#FF9500]/5 rounded-xl p-3 min-h-[80px]">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-[#FF9500]" />
+                            <span className="text-[10px] font-bold text-[#FF9500] uppercase tracking-wide">Review</span>
+                            <span className="text-[10px] text-[#FF9500] ml-auto font-semibold">{col.length}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {col.slice(0, 4).map(t => (
+                              <div key={t.id} className="flex items-center gap-1.5">
+                                <div className="w-1 h-1 rounded-full bg-[#FF9500] flex-shrink-0" />
+                                <p className="text-[11px] text-[#1D1D1F] truncate leading-tight">{t.title}</p>
+                              </div>
+                            ))}
+                            {col.length > 4 && (
+                              <p className="text-[10px] text-[#FF9500] pl-2.5">+{col.length - 4} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Destination — "Where should they go?" */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide">
+                    Where should they go?
+                  </p>
+
+                  <button
+                    onClick={() => setDestination("backlog")}
+                    className={cn(
+                      "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                      destination === "backlog"
+                        ? "border-[#007AFF] bg-[#007AFF]/5"
+                        : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                      destination === "backlog" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                    )}>
+                      <Package className={cn("w-4 h-4", destination === "backlog" ? "text-[#007AFF]" : "text-[#86868B]")} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={cn("text-sm font-semibold", destination === "backlog" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                          Move to Backlog
+                        </p>
+                        <span className="text-[10px] font-bold text-[#34C759] bg-[#34C759]/10 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#86868B] mt-0.5">Reassess priorities in next planning session</p>
+                    </div>
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                      destination === "backlog" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                    )}>
+                      {destination === "backlog" && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setDestination("new-sprint")}
+                    className={cn(
+                      "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                      destination === "new-sprint"
+                        ? "border-[#007AFF] bg-[#007AFF]/5"
+                        : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                      destination === "new-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                    )}>
+                      <Sparkles className={cn("w-4 h-4", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={cn("text-sm font-semibold", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                        Create New Sprint
+                      </p>
+                      <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a new sprint</p>
+                    </div>
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                      destination === "new-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                    )}>
+                      {destination === "new-sprint" && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
+                    </div>
+                  </button>
+
+                  {/* Sprint name input — inline, only when new-sprint selected */}
+                  {destination === "new-sprint" && (
+                    <div className="pt-1">
+                      <input
+                        type="text"
+                        value={newSprintName}
+                        onChange={(e) => setNewSprintName(e.target.value)}
+                        placeholder={`e.g., ${sprint.name.replace(/(\d+)/, (_, n) => String(Number(n) + 1))}`}
+                        autoFocus
+                        className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
             ) : (
-              <div className="text-center py-3">
-                <CheckCircle2 className="w-8 h-8 text-[#34C759] mx-auto mb-2" />
+              <div className="text-center py-6">
+                <CheckCircle2 className="w-10 h-10 text-[#34C759] mx-auto mb-3" />
                 <p className="text-sm font-semibold text-[#1D1D1F]">All tasks are done!</p>
-                <p className="text-xs text-[#86868B] mt-1">Nothing to migrate — just closing the sprint.</p>
+                <p className="text-xs text-[#86868B] mt-1">Nothing to migrate — ready to close.</p>
               </div>
             )}
 

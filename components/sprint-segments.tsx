@@ -236,21 +236,31 @@ export function SprintSegments({
               <span className="text-xs font-normal text-[#86868B]">({backlogTasks.length} unscheduled)</span>
               <ChevronDown className="w-4 h-4 text-[#86868B] ml-auto group-open:rotate-180 transition-transform" />
             </summary>
-            <div className="space-y-2 mt-2 max-h-64 overflow-y-auto">
-              {backlogTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-3 bg-[#F5F5F7] rounded-lg px-3 py-2.5 text-sm"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#86868B] flex-shrink-0" />
-                  <p className="text-[#1D1D1F] font-medium truncate">{task.title}</p>
-                  {task.phase && (
-                    <span className="ml-auto text-xs text-[#86868B] flex-shrink-0 bg-[#E5E5E7] px-2 py-0.5 rounded">
-                      {task.phase}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="space-y-1.5 mt-2 max-h-64 overflow-y-auto">
+              {backlogTasks.map((task) => {
+                const priorityStripe: Record<string, string> = {
+                  high: "bg-[#FF3B30]",
+                  medium: "bg-[#FF9500]",
+                  low: "bg-[#34C759]",
+                }
+                const stripe = priorityStripe[task.priority] || "bg-[#D1D1D6]"
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-0 bg-[#F5F5F7] rounded-lg overflow-hidden text-sm"
+                  >
+                    <div className={cn("w-1 self-stretch flex-shrink-0", stripe)} />
+                    <div className="flex items-center gap-3 px-3 py-2.5 flex-1 min-w-0">
+                      <p className="text-[#1D1D1F] font-medium truncate">{task.title}</p>
+                      {task.phase && (
+                        <span className="ml-auto text-xs text-[#86868B] flex-shrink-0 bg-[#E5E5E7] px-2 py-0.5 rounded">
+                          {task.phase}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </details>
         </section>
