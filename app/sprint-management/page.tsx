@@ -9,8 +9,8 @@ import { ClientOverview } from "@/components/client-overview"
 export default function SprintManagementPage() {
   return (
     <AuthGuard>
-      <div className="flex min-h-screen bg-white">
-        <Sidebar currentPhase="sprint-management" onPhaseChange={() => {}} />
+      <div className="flex min-h-screen bg-white ml-[256px]">
+        <Sidebar currentPhase="sprint-management" onPhaseChange={() => { }} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNav />
           <main className="flex-1 overflow-hidden">
