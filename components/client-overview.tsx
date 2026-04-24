@@ -88,7 +88,19 @@ export function ClientOverview() {
   }
 
   const handleSprintClosed = () => {
-    mutateSprints()
+    // Optimistically mark the closed sprint as "completed" in the local cache
+    // so the UI reflects the change immediately, then revalidate in the background.
+    if (selectedSprintForClose && sprintsData) {
+      const optimistic = {
+        ...sprintsData,
+        sprints: sprintsData.sprints.map((s: Sprint) =>
+          s.id === selectedSprintForClose.id ? { ...s, status: "completed" } : s
+        ),
+      }
+      mutateSprints(optimistic, { revalidate: true })
+    } else {
+      mutateSprints()
+    }
     mutatePendingClients()
   }
 
