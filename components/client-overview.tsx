@@ -51,8 +51,27 @@ export function ClientOverview() {
     fetcher
   )
 
+  const { data: tasksData } = useSWR(
+    selectedClientId ? `/api/tasks?clientId=${selectedClientId}` : null,
+    fetcher
+  )
+
   const clients: ClientPending[] = clientsData?.clients || []
   const sprints: Sprint[] = sprintsData?.sprints || []
+
+  // Map raw API tasks to the shape SprintSegments expects
+  const allTasks = (tasksData?.tasks || []).map((t: any) => ({
+    id: t.id,
+    title: t.title,
+    dueDate: t.due_date || "",
+    assignedTo: t.assigned_to || "",
+    phase: t.phase || "",
+    priority: t.priority || "medium",
+    status: t.status || "todo",
+    sprintId: t.sprint_id || undefined,
+  }))
+
+  const backlogTasks = allTasks.filter((t: any) => !t.sprintId)
   const selectedClient = clients.find((c) => c.clientId === selectedClientId)
 
   const sortedClients = [...clients].sort((a, b) => {
@@ -275,8 +294,8 @@ export function ClientOverview() {
               {/* Sprint List */}
               <SprintSegments
                 sprints={sprints}
-                tasks={[]}
-                backlogTasks={[]}
+                tasks={allTasks}
+                backlogTasks={backlogTasks}
                 isLoading={false}
                 onCloseSprint={handleCloseSprint}
               />
@@ -311,7 +330,7 @@ export function ClientOverview() {
         isOpen={isCloseSprintModalOpen}
         onClose={() => setIsCloseSprintModalOpen(false)}
         sprint={selectedSprintForClose}
-        tasks={[]}
+        tasks={selectedSprintForClose ? allTasks.filter((t: any) => t.sprintId === selectedSprintForClose.id) : []}
         sprints={sprints}
         onSprintClosed={handleSprintClosed}
       />
