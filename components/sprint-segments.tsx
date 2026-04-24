@@ -138,70 +138,24 @@ export function SprintSegments({
                     )}
                   </div>
 
-                  {/* Stats cards */}
-                  {(() => {
-                    const todo = sprintTasks.filter(t => t.status === 'todo' || t.status === 'to-do' || t.status === 'to_do').length
-                    const inProgress = sprintTasks.filter(t => t.status === 'in_progress' || t.status === 'in-progress').length
-                    const inReview = sprintTasks.filter(t => t.status === 'in_review' || t.status === 'in-review').length
-                    const remaining = sprintTasks.filter(t => t.status !== 'done').length
-                    const atRisk = sprintTasks.filter(t => t.status === 'blocked').length
-                    return (
-                      <div className="mt-4 space-y-3">
-                        {/* Progress bar */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs text-[#86868B]">
-                            <span>{done} of {sprintTasks.length} tasks done</span>
-                            <span className="font-semibold text-[#1D1D1F]">{pct}%</span>
-                          </div>
-                          <div className="w-full bg-[#F0F0F0] rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full rounded-full transition-all duration-500",
-                                pct === 100 ? "bg-[#34C759]" : "bg-[#007AFF]"
-                              )}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                        {/* Stat pills row */}
-                        <div className="grid grid-cols-4 gap-2">
-                          <div className="bg-[#F5F5F7] rounded-lg px-3 py-2 text-center">
-                            <p className="text-[10px] font-semibold text-[#86868B] uppercase tracking-wide">To Do</p>
-                            <p className="text-lg font-bold text-[#1D1D1F] leading-tight">{todo}</p>
-                          </div>
-                          <div className="bg-[#007AFF]/8 rounded-lg px-3 py-2 text-center">
-                            <p className="text-[10px] font-semibold text-[#007AFF] uppercase tracking-wide">In Progress</p>
-                            <p className="text-lg font-bold text-[#007AFF] leading-tight">{inProgress}</p>
-                          </div>
-                          <div className="bg-[#FF9500]/8 rounded-lg px-3 py-2 text-center">
-                            <p className="text-[10px] font-semibold text-[#FF9500] uppercase tracking-wide">In Review</p>
-                            <p className="text-lg font-bold text-[#FF9500] leading-tight">{inReview}</p>
-                          </div>
-                          <div className="bg-[#34C759]/8 rounded-lg px-3 py-2 text-center">
-                            <p className="text-[10px] font-semibold text-[#34C759] uppercase tracking-wide">Done</p>
-                            <p className="text-lg font-bold text-[#34C759] leading-tight">{done}</p>
-                          </div>
-                        </div>
-                        {/* Secondary stats */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5 text-xs text-[#86868B]">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span><span className="font-semibold text-[#1D1D1F]">{remaining}</span> remaining</span>
-                          </div>
-                          {atRisk > 0 && (
-                            <div className="flex items-center gap-1.5 text-xs text-[#FF3B30]">
-                              <AlertCircle className="w-3.5 h-3.5" />
-                              <span><span className="font-semibold">{atRisk}</span> blocked</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5 text-xs text-[#86868B]">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span><span className="font-semibold text-[#1D1D1F]">{pct}%</span> complete</span>
-                          </div>
-                        </div>
+                  {/* Progress */}
+                  {sprintTasks.length > 0 && (
+                    <div className="mt-4 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-[#86868B]">
+                        <span>{done} of {sprintTasks.length} tasks done</span>
+                        <span className="font-semibold text-[#1D1D1F]">{pct}%</span>
                       </div>
-                    )
-                  })()}
+                      <div className="w-full bg-[#F0F0F0] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all duration-500",
+                            pct === 100 ? "bg-[#34C759]" : "bg-[#007AFF]"
+                          )}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -218,12 +172,7 @@ export function SprintSegments({
             <span className="text-xs text-[#86868B]">({planningSprints.length})</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {planningSprints.map((sprint) => {
-              const sprintTasks = tasks.filter(t => t.sprintId === sprint.id)
-              const done = sprintTasks.filter(t => t.status === 'done').length
-              const todo = sprintTasks.filter(t => t.status === 'todo' || t.status === 'to-do' || t.status === 'to_do').length
-              const inProgress = sprintTasks.filter(t => t.status === 'in_progress' || t.status === 'in-progress').length
-              return (
+            {planningSprints.map((sprint) => (
               <div
                 key={sprint.id}
                 className="bg-white border border-[#E5E5E7] rounded-xl p-4 hover:shadow-sm transition-all"
@@ -236,16 +185,8 @@ export function SprintSegments({
                     <span>Starts {formatDate(sprint.start_date)}</span>
                   </div>
                 )}
-                {sprintTasks.length > 0 && (
-                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[#F0F0F0]">
-                    <span className="text-xs text-[#86868B]"><span className="font-semibold text-[#1D1D1F]">{sprintTasks.length}</span> tasks</span>
-                    <span className="text-xs text-[#86868B]"><span className="font-semibold text-[#007AFF]">{todo}</span> to-do</span>
-                    <span className="text-xs text-[#86868B]"><span className="font-semibold text-[#007AFF]">{inProgress}</span> in progress</span>
-                    <span className="text-xs text-[#86868B]"><span className="font-semibold text-[#34C759]">{done}</span> done</span>
-                  </div>
-                )}
               </div>
-            )})
+            ))}
           </div>
         </section>
       )}
