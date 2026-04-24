@@ -4,7 +4,8 @@ import { getSupabaseAdminClient } from "@/lib/db"
 
 interface CloseSprintRequest {
   sprintId: string
-  destination: "new-sprint" | "backlog"
+  destination: "new-sprint" | "existing-sprint" | "backlog"
+  existingSprintId: string | null
   newSprintName: string | null
   tasksToMigrate: string[]
 }
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload: CloseSprintRequest = await request.json()
-    const { sprintId, destination, newSprintName, tasksToMigrate } = payload
+    const { sprintId, destination, existingSprintId, newSprintName, tasksToMigrate } = payload
 
     if (!sprintId) {
       return NextResponse.json({ error: "Sprint ID required" }, { status: 400 })
@@ -53,8 +54,23 @@ export async function POST(request: NextRequest) {
 
     let destinationSprintId: string | null = null
 
-    // Create new sprint if needed
-    if (destination === "new-sprint" && newSprintName) {
+    // Resolve destination sprint ID
+    if (destination === "existing-sprint" && existingSprintId) {
+      // Validate the existing sprint belongs to the same client
+      const { data: existingSprint, error: existingSprintError } = await supabase
+        .from("sprints")
+        .select("id, client_id")
+        .eq("id", existingSprintId)
+        .eq("client_id", sprint.client_id)
+        .single()
+
+      if (existingSprintError || !existingSprint) {
+        return NextResponse.json({ error: "Target sprint not found or does not belong to this client" }, { status: 400 })
+      }
+
+      destinationSprintId = existingSprint.id
+    } else if (destination === "new-sprint" && newSprintName) {
+      // Create new sprint
       const { data: newSprint, error: createError } = await supabase
         .from("sprints")
         .insert({
@@ -74,7 +90,7 @@ export async function POST(request: NextRequest) {
       destinationSprintId = newSprint?.id || null
     }
 
-    // Migrate all pending tasks.
+    // Migrate all pending tasks
     if (pendingTaskIds.length > 0) {
       if (destination === "backlog") {
         // Move to backlog (set sprint_id to null)
@@ -83,7 +99,7 @@ export async function POST(request: NextRequest) {
           .update({ sprint_id: null, status: "todo" })
           .in("id", pendingTaskIds)
       } else {
-        // Move to new sprint
+        // Move to existing or new sprint
         await supabase
           .from("tasks")
           .update({ sprint_id: destinationSprintId })
@@ -100,7 +116,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Sprint closed. ${pendingTaskIds.length} tasks migrated.`,
-      newSprintId: destinationSprintId,
+      destinationSprintId,
     })
   } catch (error: any) {
     console.error("[v0] Error closing sprint:", error)

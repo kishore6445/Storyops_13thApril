@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, CheckCircle2, ArrowRight, AlertCircle, Package, Sparkles, ChevronLeft, AlertTriangle } from "lucide-react"
+import { X, CheckCircle2, ArrowRight, AlertCircle, Package, Sparkles, ChevronLeft, AlertTriangle, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Task {
@@ -13,6 +13,7 @@ interface Task {
 interface Sprint {
   id: string
   name: string
+  status?: "planning" | "active" | "completed"
 }
 
 interface SprintCloseModalProps {
@@ -24,7 +25,7 @@ interface SprintCloseModalProps {
   onSprintClosed: () => void
 }
 
-type Destination = "backlog" | "new-sprint"
+type Destination = "backlog" | "existing-sprint" | "new-sprint"
 type Step = 1 | 2
 
 export function SprintCloseModal({
@@ -37,6 +38,7 @@ export function SprintCloseModal({
 }: SprintCloseModalProps) {
   const [step, setStep] = useState<Step>(1)
   const [destination, setDestination] = useState<Destination>("backlog")
+  const [existingSprintId, setExistingSprintId] = useState<string>("")
   const [newSprintName, setNewSprintName] = useState("")
   const [isClosing, setIsClosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,9 +50,17 @@ export function SprintCloseModal({
   const pendingTasks = tasks.filter((t) => t.status === "todo" || isInProgress(t.status) || isInReview(t.status))
   const totalPending = pendingTasks.length
 
+  // Available planning sprints for "existing sprint" option (exclude the sprint being closed)
+  const planningsprints = sprints.filter(
+    (s) => (s.status === "planning" || s.status === "active") && s.id !== sprint?.id
+  )
+
+  const selectedExistingSprint = planningsprints.find((s) => s.id === existingSprintId)
+
   const handleReset = () => {
     setStep(1)
     setDestination("backlog")
+    setExistingSprintId("")
     setNewSprintName("")
     setError(null)
   }
@@ -63,8 +73,16 @@ export function SprintCloseModal({
   const canProceedToStep2 = () => {
     if (totalPending === 0) return true
     if (destination === "backlog") return true
+    if (destination === "existing-sprint") return existingSprintId.trim().length > 0
     if (destination === "new-sprint") return newSprintName.trim().length > 0
     return false
+  }
+
+  const getDestinationLabel = () => {
+    if (destination === "backlog") return "Backlog"
+    if (destination === "existing-sprint" && selectedExistingSprint) return selectedExistingSprint.name
+    if (destination === "new-sprint") return `"${newSprintName}"`
+    return "—"
   }
 
   const handleConfirmClose = async () => {
@@ -77,6 +95,7 @@ export function SprintCloseModal({
       const payload = {
         sprintId: sprint.id,
         destination,
+        existingSprintId: destination === "existing-sprint" ? existingSprintId : null,
         newSprintName: destination === "new-sprint" ? newSprintName.trim() : null,
         tasksToMigrate: pendingTasks.map((t) => t.id),
       }
@@ -244,6 +263,7 @@ export function SprintCloseModal({
                     Where should they go?
                   </p>
 
+                  {/* Option 1: Backlog */}
                   <button
                     onClick={() => setDestination("backlog")}
                     className={cn(
@@ -278,48 +298,107 @@ export function SprintCloseModal({
                     </div>
                   </button>
 
-                  <button
-                    onClick={() => setDestination("new-sprint")}
-                    className={cn(
-                      "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
-                      destination === "new-sprint"
-                        ? "border-[#007AFF] bg-[#007AFF]/5"
-                        : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                      destination === "new-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
-                    )}>
-                      <Sparkles className={cn("w-4 h-4", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
-                    </div>
-                    <div className="flex-1">
-                      <p className={cn("text-sm font-semibold", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
-                        Create New Sprint
-                      </p>
-                      <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a new sprint</p>
-                    </div>
-                    <div className={cn(
-                      "w-4 h-4 rounded-full border-2 flex-shrink-0",
-                      destination === "new-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
-                    )}>
-                      {destination === "new-sprint" && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
-                    </div>
-                  </button>
+                  {/* Option 2: Existing Sprint — only show if there are planning/active sprints available */}
+                  {planningsprints.length > 0 && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setDestination("existing-sprint")
+                          if (!existingSprintId && planningsprints.length > 0) {
+                            setExistingSprintId(planningsprints[0].id)
+                          }
+                        }}
+                        className={cn(
+                          "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                          destination === "existing-sprint"
+                            ? "border-[#007AFF] bg-[#007AFF]/5"
+                            : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                          destination === "existing-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                        )}>
+                          <ArrowRight className={cn("w-4 h-4", destination === "existing-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
+                        </div>
+                        <div className="flex-1">
+                          <p className={cn("text-sm font-semibold", destination === "existing-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                            Move to Existing Sprint
+                          </p>
+                          <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a planned sprint</p>
+                        </div>
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                          destination === "existing-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                        )}>
+                          {destination === "existing-sprint" && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
+                        </div>
+                      </button>
 
-                  {/* Sprint name input — inline, only when new-sprint selected */}
-                  {destination === "new-sprint" && (
-                    <div className="pt-1">
-                      <input
-                        type="text"
-                        value={newSprintName}
-                        onChange={(e) => setNewSprintName(e.target.value)}
-                        placeholder={`e.g., ${sprint.name.replace(/(\d+)/, (_, n) => String(Number(n) + 1))}`}
-                        autoFocus
-                        className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
-                      />
+                      {/* Sprint dropdown — inline, only when existing-sprint selected */}
+                      {destination === "existing-sprint" && (
+                        <div className="relative pt-1">
+                          <select
+                            value={existingSprintId}
+                            onChange={(e) => setExistingSprintId(e.target.value)}
+                            className="w-full appearance-none px-4 py-3 pr-10 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] bg-white focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent cursor-pointer"
+                          >
+                            <option value="" disabled>Select a sprint…</option>
+                            {planningsprints.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 translate-y-[-25%] w-4 h-4 text-[#86868B] pointer-events-none" />
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {/* Option 3: New Sprint */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setDestination("new-sprint")}
+                      className={cn(
+                        "w-full text-left flex items-center gap-4 p-4 rounded-xl border-2 transition-all",
+                        destination === "new-sprint"
+                          ? "border-[#007AFF] bg-[#007AFF]/5"
+                          : "border-[#E5E5E7] hover:border-[#D1D1D6] bg-white"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
+                        destination === "new-sprint" ? "bg-[#007AFF]/10" : "bg-[#F5F5F7]"
+                      )}>
+                        <Sparkles className={cn("w-4 h-4", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#86868B]")} />
+                      </div>
+                      <div className="flex-1">
+                        <p className={cn("text-sm font-semibold", destination === "new-sprint" ? "text-[#007AFF]" : "text-[#1D1D1F]")}>
+                          Create New Sprint
+                        </p>
+                        <p className="text-xs text-[#86868B] mt-0.5">Carry tasks forward into a brand-new sprint</p>
+                      </div>
+                      <div className={cn(
+                        "w-4 h-4 rounded-full border-2 flex-shrink-0",
+                        destination === "new-sprint" ? "border-[#007AFF] bg-[#007AFF]" : "border-[#D1D1D6]"
+                      )}>
+                        {destination === "new-sprint" && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
+                      </div>
+                    </button>
+
+                    {/* Sprint name input — inline, only when new-sprint selected */}
+                    {destination === "new-sprint" && (
+                      <div className="pt-1">
+                        <input
+                          type="text"
+                          value={newSprintName}
+                          onChange={(e) => setNewSprintName(e.target.value)}
+                          placeholder={`e.g., ${sprint.name.replace(/(\d+)/, (_, n) => String(Number(n) + 1))}`}
+                          autoFocus
+                          className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -366,9 +445,7 @@ export function SprintCloseModal({
                     </div>
                     <p className="text-sm text-[#1D1D1F]">
                       <span className="font-bold">{totalPending}</span> pending {totalPending === 1 ? "task" : "tasks"} moved to{" "}
-                      <span className="font-bold">
-                        {destination === "backlog" ? "Backlog" : `"${newSprintName}"`}
-                      </span>
+                      <span className="font-bold">{getDestinationLabel()}</span>
                     </p>
                   </div>
                 )}
