@@ -14,26 +14,48 @@ export async function GET(request: NextRequest) {
     const sprintId = searchParams.get('sprintId')
 
     const supabase = getSupabaseClient()
-    
-    // Build query with client and sprint filters
-    let baseQuery = supabase.from('sprint_tasks').select('id, status, created_at, assigned_to')
+
+    // Query sprint_tasks table
+    let sprintTasksQuery = supabase
+      .from('sprint_tasks')
+      .select('id, status, created_at, assigned_to')
     
     if (clientId && clientId !== 'all') {
-      baseQuery = baseQuery.eq('client_id', clientId)
+      sprintTasksQuery = sprintTasksQuery.eq('client_id', clientId)
     }
-    
-    if (sprintId) {
-      baseQuery = baseQuery.eq('sprint_id', sprintId)
-    }
-
-    const { data: allTasks, error } = await baseQuery
-
-    if (error) {
-      console.error('[v0] Error fetching tasks:', error)
-      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
+    if (sprintId && sprintId !== 'all') {
+      sprintTasksQuery = sprintTasksQuery.eq('sprint_id', sprintId)
     }
 
-    const tasks = allTasks || []
+    // Query tasks table (tasks created via My Tasks that are assigned to a sprint)
+    let regularTasksQuery = supabase
+      .from('tasks')
+      .select('id, status, created_at, assigned_to')
+      .not('sprint_id', 'is', null)
+
+    if (clientId && clientId !== 'all') {
+      regularTasksQuery = regularTasksQuery.eq('client_id', clientId)
+    }
+    if (sprintId && sprintId !== 'all') {
+      regularTasksQuery = regularTasksQuery.eq('sprint_id', sprintId)
+    }
+
+    const [sprintTasksResult, regularTasksResult] = await Promise.all([
+      sprintTasksQuery,
+      regularTasksQuery,
+    ])
+
+    if (sprintTasksResult.error) {
+      console.error('[v0] Error fetching sprint_tasks for stats:', sprintTasksResult.error)
+    }
+    if (regularTasksResult.error) {
+      console.error('[v0] Error fetching tasks for stats:', regularTasksResult.error)
+    }
+
+    const tasks = [
+      ...(sprintTasksResult.data || []),
+      ...(regularTasksResult.data || []),
+    ]
 
     // Calculate all stats from the data
     const totalTasks = tasks.length
