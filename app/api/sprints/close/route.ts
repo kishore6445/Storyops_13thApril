@@ -7,6 +7,9 @@ interface CloseSprintRequest {
   destination: "new-sprint" | "existing-sprint" | "backlog"
   existingSprintId: string | null
   newSprintName: string | null
+  newSprintStartDate: string | null
+  newSprintEndDate: string | null
+  newSprintStatus: "planning" | "active" | null
   tasksToMigrate: string[]
 }
 
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload: CloseSprintRequest = await request.json()
-    const { sprintId, destination, existingSprintId, newSprintName, tasksToMigrate } = payload
+    const { sprintId, destination, existingSprintId, newSprintName, newSprintStartDate, newSprintEndDate, newSprintStatus, tasksToMigrate } = payload
 
     if (!sprintId) {
       return NextResponse.json({ error: "Sprint ID required" }, { status: 400 })
@@ -76,9 +79,9 @@ export async function POST(request: NextRequest) {
         .insert({
           name: newSprintName,
           client_id: sprint.client_id,
-          status: "planning",
-          start_date: new Date().toISOString().split("T")[0],
-          end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+          status: newSprintStatus || "planning",
+          start_date: newSprintStartDate || new Date().toISOString().split("T")[0],
+          end_date: newSprintEndDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         })
         .select("id")
         .single()
@@ -108,10 +111,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark sprint as completed
-    await supabase
+    const { error: closeError } = await supabase
       .from("sprints")
-      .update({ status: "completed", closed_at: new Date().toISOString() })
+      .update({ status: "completed" })
       .eq("id", sprintId)
+
+    if (closeError) {
+      console.error("[v0] Error marking sprint as completed:", closeError)
+      return NextResponse.json({ error: "Failed to close sprint" }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,

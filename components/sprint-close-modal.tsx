@@ -36,10 +36,16 @@ export function SprintCloseModal({
   sprints,
   onSprintClosed,
 }: SprintCloseModalProps) {
+  const defaultStart = new Date().toISOString().split("T")[0]
+  const defaultEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+
   const [step, setStep] = useState<Step>(1)
   const [destination, setDestination] = useState<Destination>("backlog")
   const [existingSprintId, setExistingSprintId] = useState<string>("")
   const [newSprintName, setNewSprintName] = useState("")
+  const [newSprintStartDate, setNewSprintStartDate] = useState(defaultStart)
+  const [newSprintEndDate, setNewSprintEndDate] = useState(defaultEnd)
+  const [newSprintStatus, setNewSprintStatus] = useState<"planning" | "active">("planning")
   const [isClosing, setIsClosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,6 +68,9 @@ export function SprintCloseModal({
     setDestination("backlog")
     setExistingSprintId("")
     setNewSprintName("")
+    setNewSprintStartDate(defaultStart)
+    setNewSprintEndDate(defaultEnd)
+    setNewSprintStatus("planning")
     setError(null)
   }
 
@@ -97,6 +106,9 @@ export function SprintCloseModal({
         destination,
         existingSprintId: destination === "existing-sprint" ? existingSprintId : null,
         newSprintName: destination === "new-sprint" ? newSprintName.trim() : null,
+        newSprintStartDate: destination === "new-sprint" ? newSprintStartDate : null,
+        newSprintEndDate: destination === "new-sprint" ? newSprintEndDate : null,
+        newSprintStatus: destination === "new-sprint" ? newSprintStatus : null,
         tasksToMigrate: pendingTasks.map((t) => t.id),
       }
       const response = await fetch("/api/sprints/close", {
@@ -385,17 +397,51 @@ export function SprintCloseModal({
                       </div>
                     </button>
 
-                    {/* Sprint name input — inline, only when new-sprint selected */}
+                    {/* Full new sprint form — inline, only when new-sprint selected */}
                     {destination === "new-sprint" && (
-                      <div className="pt-1">
-                        <input
-                          type="text"
-                          value={newSprintName}
-                          onChange={(e) => setNewSprintName(e.target.value)}
-                          placeholder={`e.g., ${sprint.name.replace(/(\d+)/, (_, n) => String(Number(n) + 1))}`}
-                          autoFocus
-                          className="w-full px-4 py-3 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
-                        />
+                      <div className="pt-1 space-y-2">
+                        <div>
+                          <label className="block text-xs font-medium text-[#86868B] mb-1">Sprint Name</label>
+                          <input
+                            type="text"
+                            value={newSprintName}
+                            onChange={(e) => setNewSprintName(e.target.value)}
+                            placeholder={`e.g., ${sprint.name.replace(/(\d+)/, (_, n) => String(Number(n) + 1))}`}
+                            autoFocus
+                            className="w-full px-3 py-2.5 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#BDBDBE] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-medium text-[#86868B] mb-1">Start Date</label>
+                            <input
+                              type="date"
+                              value={newSprintStartDate}
+                              onChange={(e) => setNewSprintStartDate(e.target.value)}
+                              className="w-full px-3 py-2.5 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-[#86868B] mb-1">End Date</label>
+                            <input
+                              type="date"
+                              value={newSprintEndDate}
+                              onChange={(e) => setNewSprintEndDate(e.target.value)}
+                              className="w-full px-3 py-2.5 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#86868B] mb-1">Status</label>
+                          <select
+                            value={newSprintStatus}
+                            onChange={(e) => setNewSprintStatus(e.target.value as "planning" | "active")}
+                            className="w-full px-3 py-2.5 border border-[#E5E5E7] rounded-xl text-sm text-[#1D1D1F] bg-white focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent"
+                          >
+                            <option value="planning">Planning</option>
+                            <option value="active">Active</option>
+                          </select>
+                        </div>
                       </div>
                     )}
                   </div>
