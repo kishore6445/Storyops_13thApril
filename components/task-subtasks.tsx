@@ -32,7 +32,7 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; full_name: string; email: string }>>([])
 
-  // Fetch subtasks
+  // Fetch subtasks and team members
   useEffect(() => {
     const loadSubtasks = async () => {
       try {
@@ -64,7 +64,26 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
       }
     }
 
+    // Fetch team members for assignment dropdown
+    const loadTeamMembers = async () => {
+      try {
+        const token = localStorage.getItem("sessionToken")
+        const response = await fetch("/api/team-members", {
+          headers: { "Authorization": `Bearer ${token}` }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          console.log("[v0] Team members loaded:", data)
+          setTeamMembers(data.users || [])
+        }
+      } catch (error) {
+        console.error("[v0] Error loading team members:", error)
+        setTeamMembers([])
+      }
+    }
+
     loadSubtasks()
+    loadTeamMembers()
   }, [taskId, onStatusBlocked])
 
   const handleAddSubtask = async () => {
