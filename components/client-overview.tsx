@@ -63,9 +63,9 @@ export function ClientOverview() {
     fetcher
   )
 
-  // Fetch team members for selected client
+  // Fetch team members for task assignment
   const { data: teamMembersData } = useSWR(
-    selectedClientId ? `/api/clients/${selectedClientId}/team-members` : null,
+    "/api/team-members",
     fetcher,
     { onError: () => console.log("[v0] Team members fetch failed, continuing without") }
   )
@@ -283,7 +283,7 @@ export function ClientOverview() {
         clientId={selectedClientId || undefined}
         sprintId={selectedSprintId || undefined}
         task={selectedTask}
-        teamMembers={teamMembersData?.team_members || []}
+        teamMembers={teamMembersData?.users || []}
       />
 
       {/* Sprint Close Modal */}
