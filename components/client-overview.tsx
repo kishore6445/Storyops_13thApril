@@ -97,19 +97,27 @@ export function ClientOverview() {
     <div className="flex h-full min-h-0 gap-0">
 
       {/* ─── LEFT PANEL: Clients ─── */}
-      <div
-        className={cn(
-          "flex flex-col flex-shrink-0 border-r border-[#E5E5E7] transition-all duration-300 bg-[#FAFAFA]",
-          clientListCollapsed ? "w-14" : selectedClientId ? "w-72" : "w-full max-w-2xl mx-auto"
-        )}
-      >
-        {/* Panel Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-[#E5E5E7]">
-          {!clientListCollapsed && (
-            <div>
-              <h1 className="text-base font-bold text-[#1D1D1F]">Sprint Management</h1>
-              <p className="text-xs text-[#86868B] mt-0.5">{clients.length} clients</p>
-            </div>
+      <div className="w-64 flex flex-col bg-white border-r border-[#E5E5E7] flex-shrink-0">
+        {/* Header */}
+        <div className="px-4 py-4 border-b border-[#E5E5E7] flex-shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-[#1D1D1F] uppercase tracking-wide">Clients</h3>
+            <button
+              onClick={() => setClientListCollapsed(!clientListCollapsed)}
+              className="p-1.5 hover:bg-[#F5F5F7] rounded-lg transition-all"
+              title={clientListCollapsed ? "Expand" : "Collapse"}
+            >
+              {clientListCollapsed ? (
+                <ChevronRight className="w-4 h-4 text-[#86868B]" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-[#86868B] rotate-180" />
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-[#86868B]">
+            {sortedClients.length} client{sortedClients.length !== 1 ? "s" : ""}
+          </p>
+        </div>
           )}
           {selectedClientId && (
             <button
@@ -300,11 +308,20 @@ export function ClientOverview() {
                 onCloseSprint={handleCloseSprint}
               />
 
-              {/* Divider + Create Sprint */}
-              <div className="pt-2 border-t border-[#E5E5E7]">
-                <p className="text-xs font-semibold text-[#86868B] uppercase tracking-wide mb-4">New Sprint</p>
+              {/* Divider + Create Sprint Section */}
+              <div className="pt-6 border-t border-[#E5E5E7]">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-4 bg-[#007AFF] rounded-full" />
+                    <p className="text-sm font-bold text-[#1D1D1F] uppercase tracking-wide">Create New Sprint</p>
+                  </div>
+                  <p className="text-xs text-[#86868B]">
+                    Automatically generates sprint name following the format: Sprint N_XXX_MonDD-MonDD
+                  </p>
+                </div>
                 <InlineSprintCreator
                   clientId={selectedClientId}
+                  clientName={selectedClient.clientName}
                   sprints={sprints}
                   selectedSprintId={selectedSprintId}
                   onSprintChange={setSelectedSprintId}
@@ -315,14 +332,25 @@ export function ClientOverview() {
             </div>
           </div>
         </div>
-      ) : !clientListCollapsed && (
-        /* Empty state when no client selected and list is showing full-width */
-        <div className="hidden" />
-      )}
-
-      {selectedClientId === null && (
-        /* Full-width empty state when nothing selected */
-        <div className="hidden" />
+      ) : (
+        /* Empty state when no client selected — show helpful message */
+        <div className="flex-1 flex items-center justify-center bg-[#F5F5F7]">
+          <div className="text-center max-w-md mx-auto px-6">
+            <div className="w-12 h-12 bg-[#E5E5E7] rounded-full flex items-center justify-center mx-auto mb-4">
+              <LayoutGrid className="w-6 h-6 text-[#86868B]" />
+            </div>
+            <h3 className="text-lg font-semibold text-[#1D1D1F] mb-2">Select a client</h3>
+            <p className="text-sm text-[#86868B] mb-4">
+              Choose a client from the left panel to view and manage their sprints, or create new sprints.
+            </p>
+            <button
+              onClick={() => setClientListCollapsed(!clientListCollapsed)}
+              className="px-4 py-2 bg-[#007AFF] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-all"
+            >
+              View Clients
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Sprint Close Modal */}
