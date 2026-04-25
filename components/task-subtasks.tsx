@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Check, AlertCircle, Clock, X } from "lucide-react"
+import { Plus, Trash2, Check, AlertCircle, Clock, X, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Subtask {
@@ -26,6 +26,7 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
   const [subtasks, setSubtasks] = useState<Subtask[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showDetails, setShowDetails] = useState(true)
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("")
   const [selectedAssignee, setSelectedAssignee] = useState<string>("")
   const [selectedDueDate, setSelectedDueDate] = useState<string>("")
@@ -186,50 +187,51 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
   const hasIncompleteSubtasks = subtasks.some(s => s.status !== "done")
 
   return (
-    <div className="pt-6 border-t-2 border-gray-200">
-      <div className="flex items-center justify-between mb-6 gap-4">
-        <div>
-          <h3 className="text-base font-bold text-gray-900">Subtasks</h3>
-          <p className="text-xs text-gray-500 mt-1">Break down the work into smaller pieces</p>
-        </div>
+    <div className="space-y-3">
+      {/* Compact Collapsible Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="flex items-center gap-2 flex-1 text-left hover:opacity-75 transition-opacity group"
+        >
+          <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform group-hover:text-gray-700", !showDetails && "-rotate-90")} />
+          <h3 className="text-sm font-semibold text-gray-900">Subtasks</h3>
+          <span className="text-xs text-gray-500">({completedCount}/{subtasks.length})</span>
+        </button>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg whitespace-nowrap"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
         >
-          <Plus className="w-5 h-5" />
-          Add Subtask
+          <Plus className="w-4 h-4" />
+          Add
         </button>
       </div>
 
-      {/* Progress Indicator */}
-      {subtasks.length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div>
-              <p className="text-sm font-medium text-blue-900">{completedCount} / {subtasks.length} completed</p>
-            </div>
-            <span className="text-xs font-semibold text-blue-700">{Math.round(progressPercent)}%</span>
-          </div>
-          <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+      {/* Minimal Progress Bar - Always Visible */}
+      <div className="space-y-1">
+        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className={cn(
+              "h-full transition-all duration-300",
+              Math.round(progressPercent) === 100 ? "bg-green-500" : "bg-blue-500"
+            )}
+            style={{ width: `${Math.round(progressPercent)}%` }}
+          />
         </div>
-      )}
+        <p className="text-xs text-gray-600">{Math.round(progressPercent)}% complete</p>
+      </div>
 
-      {/* Incomplete Subtasks Warning */}
+      {/* Warning if incomplete during review */}
       {hasIncompleteSubtasks && mainTaskStatus === "in_review" && (
-        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-800">Complete all subtasks before moving to Review</p>
+        <div className="p-2.5 bg-amber-50 border border-amber-200 rounded flex items-start gap-2">
+          <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800">Complete all subtasks before Review</p>
         </div>
       )}
 
       {/* Add Subtask Form */}
       {showAddForm && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-white border border-blue-200 rounded-lg space-y-3">
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-white border border-blue-200 rounded-lg space-y-3">
           {/* Header with close button */}
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-gray-900">Add New Subtask</h4>
@@ -296,7 +298,9 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
         </div>
       )}
 
-      {/* Subtasks List */}
+      {/* Collapsible Subtasks Details */}
+      {showDetails && (
+        <div className="border-t border-gray-200 pt-3 space-y-2">
       {isLoading ? (
         <p className="text-xs text-gray-500 text-center py-4">Loading subtasks...</p>
       ) : subtasks.length === 0 ? (
@@ -397,6 +401,7 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
             )
           })}
         </div>
+      )}
       )}
     </div>
   )

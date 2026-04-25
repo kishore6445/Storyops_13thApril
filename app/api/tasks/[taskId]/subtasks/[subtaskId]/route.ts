@@ -5,7 +5,7 @@ import { validateSession } from "@/lib/auth"
 // PATCH - Update a subtask
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { taskId: string; subtaskId: string } }
+  { params }: { params: Promise<{ taskId: string; subtaskId: string }> }
 ) {
   try {
     const authHeader = request.headers.get("authorization")
@@ -21,8 +21,7 @@ export async function PATCH(
 
     const body = await request.json()
     const { title, status, assignee_id, due_date } = body
-    const taskId = params.taskId
-    const subtaskId = params.subtaskId
+    const { taskId, subtaskId } = await params
 
     const supabase = getSupabaseAdminClient()
 
@@ -80,7 +79,7 @@ export async function PATCH(
 // DELETE - Delete a subtask
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { taskId: string; subtaskId: string } }
+  { params }: { params: Promise<{ taskId: string; subtaskId: string }> }
 ) {
   try {
     const authHeader = request.headers.get("authorization")
@@ -95,8 +94,7 @@ export async function DELETE(
     }
 
     const supabase = getSupabaseAdminClient()
-    const taskId = params.taskId
-    const subtaskId = params.subtaskId
+    const { taskId, subtaskId } = await params
 
     // Get subtask title for activity log
     const { data: subtask } = await supabase
