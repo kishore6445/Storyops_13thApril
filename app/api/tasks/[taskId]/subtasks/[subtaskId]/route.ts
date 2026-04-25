@@ -7,6 +7,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string; subtaskId: string }> }
 ) {
+  console.log("[v0] PATCH subtask - params is a Promise, awaiting...")
   try {
     const authHeader = request.headers.get("authorization")
     if (!authHeader) {
@@ -22,6 +23,7 @@ export async function PATCH(
     const body = await request.json()
     const { title, status, assignee_id, due_date } = body
     const { taskId, subtaskId } = await params
+    console.log("[v0] PATCH subtask - taskId:", taskId, "subtaskId:", subtaskId)
 
     const supabase = getSupabaseAdminClient()
 
