@@ -234,6 +234,7 @@ export function ClientOverview() {
         sprint={selectedSprint || null}
         tasks={sprintTasks}
         isLoading={tasksLoading}
+        teamMembers={teamMembersData?.users || []}
         onTaskClick={(task) => {
           setSelectedTask(task)
           setShowTaskModal(true)

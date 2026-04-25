@@ -28,6 +28,7 @@ interface SprintDetailModalProps {
   tasks: Task[]
   isLoading?: boolean
   onTaskClick?: (task: Task) => void
+  teamMembers?: Array<{ id: string; name: string; email?: string }>
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -44,8 +45,16 @@ export function SprintDetailModal({
   tasks,
   isLoading,
   onTaskClick,
+  teamMembers = [],
 }: SprintDetailModalProps) {
   if (!isOpen || !sprint) return null
+
+  // Helper function to resolve user ID to name
+  const getUserName = (userId?: string): string => {
+    if (!userId) return "Unassigned"
+    const user = teamMembers.find(u => u.id === userId)
+    return user?.name || userId
+  }
 
   // Group tasks by status
   const tasksByStatus = {
@@ -143,9 +152,9 @@ export function SprintDetailModal({
                                 <p className="text-sm font-medium text-[#1D1D1F] line-clamp-2 group-hover:text-[#007AFF] transition-colors">
                                   {task.title}
                                 </p>
-                                {task.assignedTo && (
-                                  <p className="text-xs text-[#86868B] mt-1">Assigned to {task.assignedTo}</p>
-                                )}
+                                <p className="text-xs text-[#86868B] mt-1">
+                                  {getUserName(task.assignedTo)}
+                                </p>
                               </div>
                               <ChevronRight className="w-4 h-4 text-[#D1D1D6] flex-shrink-0 group-hover:text-[#007AFF] transition-colors" />
                             </div>
