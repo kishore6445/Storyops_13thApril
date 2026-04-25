@@ -31,7 +31,7 @@ Automatic weekly sprint creation system with intelligent naming protocol: **Spri
 
 ### 3. Vercel Cron Job (`/api/cron/sprint-auto-create/route.ts`)
 **GET /api/cron/sprint-auto-create**
-- Runs every Monday at 12:00 AM UTC
+- Runs every Saturday at 12:00 AM UTC
 - Calls `/api/sprints/auto-create` endpoint
 - Requires `CRON_SECRET` header for authentication
 
@@ -46,7 +46,7 @@ CRON_SECRET=<your-secret-key>
   "crons": [
     {
       "path": "/api/cron/sprint-auto-create",
-      "schedule": "0 0 * * MON"  // Monday midnight UTC
+      "schedule": "0 0 * * SAT"  // Saturday midnight UTC
     }
   ]
 }
@@ -77,17 +77,19 @@ curl -X POST https://your-app.vercel.app/api/sprints/auto-create \
 
 ### 4. Verify Cron Job
 In Vercel Dashboard → Project Settings → Crons, you should see:
-- `/api/cron/sprint-auto-create` scheduled for every Monday at 00:00 UTC
+- `/api/cron/sprint-auto-create` scheduled for every Saturday at 00:00 UTC
 
 ## Usage
 
 ### Auto-Creation (Default)
-Every Monday at 12:00 AM UTC, the system automatically:
+Every Saturday at 12:00 AM UTC, the system automatically:
 1. Fetches all active clients
 2. Counts their existing sprints
 3. Generates new sprint name: `Sprint N_XXX_MonDD-MonDD`
 4. Creates sprint with auto-generated name and dates
 5. Logs results (successes + errors)
+
+This gives teams the entire Sunday to plan and organize for the upcoming sprint, with fresh sprint cards ready to populate on Monday morning.
 
 ### Manual Creation
 Users can toggle **"Auto-generate sprint name"** off in InlineSprintCreator to:
@@ -109,7 +111,7 @@ Users can toggle **"Auto-generate sprint name"** off in InlineSprintCreator to:
 - Failed clients can be retried manually
 
 ### What if Monday falls on a holiday?
-- Cron still runs on Monday (no smart holiday detection)
+- Cron still runs on Saturday (no smart holiday detection)
 - Manual override available via InlineSprintCreator
 
 ### What about clients in different timezones?

@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/sprint-auto-create",
-      "schedule": "0 0 * * MON"
+      "schedule": "0 0 * * SAT"
     }
   ]
 }
