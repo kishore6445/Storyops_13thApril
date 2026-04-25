@@ -58,8 +58,8 @@ export function ClientOverview() {
   )
 
   // Fetch tasks for selected client and sprint
-  const { data: tasksData } = useSWR(
-    selectedClientId ? `/api/account-manager/tasks?sprintId=${selectedSprintId}&clientId=${selectedClientId}` : null,
+  const { data: tasksData, isLoading: tasksLoading } = useSWR(
+    selectedClientId && selectedSprintId ? `/api/account-manager/tasks?sprintId=${selectedSprintId}&clientId=${selectedClientId}` : null,
     fetcher
   )
 
@@ -70,21 +70,9 @@ export function ClientOverview() {
     { onError: () => console.log("[v0] Team members fetch failed, continuing without") }
   )
 
-  // Fetch sprints for selected client
-  const { data: sprintsData, mutate: mutateSprints } = useSWR(
-    selectedClientId ? `/api/sprints?clientId=${selectedClientId}` : null,
-    fetcher
-  )
-
-  // Fetch tasks for selected client
-  const { data: tasksData, isLoading: tasksLoading } = useSWR(
-    selectedClientId ? `/api/tasks?clientId=${selectedClientId}` : null,
-    fetcher
-  )
-
   // Fetch stats for selected client/sprint
   const { data: statsData } = useSWR(
-    selectedClientId ? `/api/account-manager/stats?clientId=${selectedClientId}` : null,
+    selectedClientId && selectedSprintId ? `/api/account-manager/stats?clientId=${selectedClientId}&sprintId=${selectedSprintId}` : null,
     fetcher
   )
 

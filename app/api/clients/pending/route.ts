@@ -157,12 +157,13 @@ export async function GET(request: NextRequest) {
     })
 
     // Filter to only clients with pending work
+    // Return all clients if none have pending work (e.g., after reset), otherwise return only those with pending work
     const clientsWithPendingWork = clientPendingData.filter(
       (client) => client.pendingTaskCount > 0 || client.overdueTasks > 0
     )
 
     return NextResponse.json({ 
-      clients: clientsWithPendingWork.length > 0 ? clientsWithPendingWork : clientPendingData 
+      clients: clientPendingData  // Always return ALL clients for sprint management
     })
   } catch (error) {
     console.error("[v0] Error in /api/clients/pending:", error instanceof Error ? error.message : String(error))
