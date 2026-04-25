@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         status: "pending",
         assignee_id: assignee_id || null,
         due_date: due_date || null,
-        created_by: session.id,
+        created_by: session.userId,
         created_at: new Date().toISOString()
       })
       .select()
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Log activity
     await supabase.from("task_activity").insert({
       task_id: taskId,
-      created_by: session.id,
+      created_by: session.userId,
       action_type: "subtask_created",
       description: `Created subtask: ${title.trim()}`
     })
