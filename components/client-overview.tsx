@@ -7,6 +7,7 @@ import { SprintList } from "./sprint-list"
 import { SprintDetailModal } from "./sprint-detail-modal"
 import { InlineSprintCreator } from "./inline-sprint-creator"
 import { SprintCloseModal } from "./sprint-close-modal"
+import { TaskModalWithPKR } from "./task-modal-with-pkr"
 import useSWR from "swr"
 
 interface ClientPending {
@@ -41,11 +42,32 @@ export function ClientOverview() {
   const [showCreateSprintForm, setShowCreateSprintForm] = useState(false)
   const [isCloseSprintModalOpen, setIsCloseSprintModalOpen] = useState(false)
   const [selectedSprintForClose, setSelectedSprintForClose] = useState<Sprint | null>(null)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<any>(null)
 
   // Fetch clients
   const { data: clientsData, isLoading: clientsLoading } = useSWR(
     "/api/clients/pending",
     fetcher
+  )
+
+  // Fetch sprints for selected client
+  const { data: sprintsData, mutate: mutateSprints } = useSWR(
+    selectedClientId ? `/api/sprints?clientId=${selectedClientId}` : null,
+    fetcher
+  )
+
+  // Fetch tasks for selected client and sprint
+  const { data: tasksData } = useSWR(
+    selectedClientId ? `/api/account-manager/tasks?sprintId=${selectedSprintId}&clientId=${selectedClientId}` : null,
+    fetcher
+  )
+
+  // Fetch team members for selected client
+  const { data: teamMembersData } = useSWR(
+    selectedClientId ? `/api/clients/${selectedClientId}/team-members` : null,
+    fetcher,
+    { onError: () => console.log("[v0] Team members fetch failed, continuing without") }
   )
 
   // Fetch sprints for selected client
@@ -224,6 +246,56 @@ export function ClientOverview() {
         sprint={selectedSprint || null}
         tasks={sprintTasks}
         isLoading={tasksLoading}
+        onTaskClick={(task) => {
+          setSelectedTask(task)
+          setShowTaskModal(true)
+        }}
+      />
+
+      {/* Task Edit Modal */}
+      <TaskModalWithPKR
+        isOpen={showTaskModal}
+        onClose={() => {
+          setShowTaskModal(false)
+          setSelectedTask(null)
+        }}
+        onSave={async (taskData) => {
+          if (!selectedTask) return
+          try {
+            const res = await fetch(`/api/tasks/${selectedTask.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: taskData.title,
+                description: taskData.description,
+                priority: taskData.priority,
+                assigned_to: taskData.assigneeIds[0],
+                due_date: taskData.dueDate,
+                due_time: taskData.dueTime,
+                promised_date: taskData.promisedDate,
+                promised_time: taskData.promisedTime,
+              }),
+            })
+            if (res.ok) {
+              setShowTaskModal(false)
+              setSelectedTask(null)
+              // Refresh sprint tasks
+              const key = selectedClientId && selectedSprintId 
+                ? `/api/account-manager/tasks?sprintId=${selectedSprintId}&clientId=${selectedClientId}`
+                : null
+              if (key) {
+                const { mutate } = useSWR(key, fetcher)
+                mutate()
+              }
+            }
+          } catch (error) {
+            console.error("Failed to update task:", error)
+          }
+        }}
+        clientId={selectedClientId || undefined}
+        sprintId={selectedSprintId || undefined}
+        task={selectedTask}
+        teamMembers={teamMembersData?.team_members || []}
       />
 
       {/* Sprint Close Modal */}

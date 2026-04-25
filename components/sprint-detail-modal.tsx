@@ -27,6 +27,7 @@ interface SprintDetailModalProps {
   sprint: Sprint | null
   tasks: Task[]
   isLoading?: boolean
+  onTaskClick?: (task: Task) => void
 }
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -42,6 +43,7 @@ export function SprintDetailModal({
   sprint,
   tasks,
   isLoading,
+  onTaskClick,
 }: SprintDetailModalProps) {
   if (!isOpen || !sprint) return null
 
@@ -133,7 +135,8 @@ export function SprintDetailModal({
                         {statusTasks.map((task) => (
                           <div
                             key={task.id}
-                            className="bg-white rounded-lg p-3 border border-[#E5E5E7] hover:shadow-sm transition-all cursor-pointer group"
+                            onClick={() => onTaskClick?.(task)}
+                            className="bg-white rounded-lg p-3 border border-[#E5E5E7] hover:shadow-md hover:border-[#007AFF] transition-all cursor-pointer group"
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
