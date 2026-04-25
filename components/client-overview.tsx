@@ -69,6 +69,14 @@ export function ClientOverview() {
   const clients: ClientPending[] = clientsData?.clients || []
   const sprints: Sprint[] = sprintsData?.sprints || []
 
+  // Transform clients for SprintManagementHeader
+  const clientOptions = clients.map(client => ({
+    id: client.clientId,
+    name: client.clientName,
+    pendingCount: client.pendingTaskCount,
+    overdueCount: client.overdueTasks,
+  }))
+
   // Map raw API tasks
   const allTasks = (tasksData?.tasks || []).map((t: any) => ({
     id: t.id,
@@ -128,7 +136,7 @@ export function ClientOverview() {
     <div className="flex flex-col h-screen bg-white">
       {/* Header */}
       <SprintManagementHeader
-        clients={clients}
+        clients={clientOptions}
         selectedClientId={selectedClientId}
         selectedClientName={selectedClient?.clientName}
         stats={stats}
