@@ -402,7 +402,6 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
           })}
         </div>
       )}
-      )}
     </div>
   )
 }

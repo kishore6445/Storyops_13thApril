@@ -38,7 +38,7 @@ export async function PATCH(
       updateData.status = status
       if (status === "done" && currentSubtask?.status !== "done") {
         updateData.completed_at = new Date().toISOString()
-        updateData.completed_by = session.id
+        updateData.completed_by = session.userId
       }
     }
     if (assignee_id !== undefined) updateData.assignee_id = assignee_id
@@ -61,7 +61,7 @@ export async function PATCH(
     if (status && status !== currentSubtask?.status) {
       await supabase.from("task_activity").insert({
         task_id: taskId,
-        created_by: session.id,
+        created_by: session.userId,
         action_type: "subtask_updated",
         old_value: currentSubtask?.status,
         new_value: status,
@@ -116,7 +116,7 @@ export async function DELETE(
     // Log activity
     await supabase.from("task_activity").insert({
       task_id: taskId,
-      created_by: session.id,
+      created_by: session.userId,
       action_type: "subtask_deleted",
       description: `Deleted subtask: ${subtask?.title}`
     })
