@@ -36,6 +36,24 @@ const fetcher = (url: string) => {
   }).then((res) => res.json())
 }
 
+// Helper function to get task status based on due date
+const getTaskStatus = (dueDate?: string): "overdue" | "due-today" | "due-soon" | "on-track" | "no-date" => {
+  if (!dueDate) return "no-date"
+  
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const due = new Date(dueDate)
+  due.setHours(0, 0, 0, 0)
+  
+  const daysUntilDue = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (daysUntilDue < 0) return "overdue"
+  if (daysUntilDue === 0) return "due-today"
+  if (daysUntilDue <= 3) return "due-soon"
+  return "on-track"
+}
+
 export function TeamAnalyticsDashboard() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
