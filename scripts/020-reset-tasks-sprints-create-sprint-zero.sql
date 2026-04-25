@@ -1,12 +1,11 @@
 -- ============================================================================
--- RESET SCRIPT: Archive and Clear All Tasks & Sprints, Create Sprint Zero
+-- RESET SCRIPT: Archive and Clear All Tasks & Sprints
 -- ============================================================================
 -- This script:
 -- 1. Creates backup/archive tables for tasks, sprints, and time entries
 -- 2. Copies all current data to archives
 -- 3. Deletes all tasks, sprints, and time entries from main tables
--- 4. Creates "Sprint Zero" for each client
--- 5. Preserves all users and clients (NOT deleted)
+-- 4. Preserves all users and clients (NOT deleted)
 -- ============================================================================
 
 -- Step 1: Create backup tables to archive old data
@@ -120,22 +119,7 @@ DELETE FROM individual_sprints;
 -- Delete from sprints table
 DELETE FROM sprints;
 
--- Step 5: Create "Sprint Zero" for each client
--- ============================================================================
-
-INSERT INTO sprints (client_id, name, start_date, end_date, status)
-SELECT 
-  c.id,
-  'Sprint Zero - Setup',
-  CURRENT_DATE,
-  CURRENT_DATE + INTERVAL '14 days',
-  'planning'
-FROM clients c
-WHERE c.is_active = true
-  AND c.id NOT IN (SELECT client_id FROM sprints)
-ON CONFLICT DO NOTHING;
-
--- Step 6: Verify the reset
+-- Step 5: Verify the reset
 -- ============================================================================
 
 -- Check counts
@@ -148,17 +132,6 @@ SELECT
   (SELECT COUNT(*) FROM clients) as total_clients,
   (SELECT COUNT(*) FROM users) as total_users;
 
--- Show all Sprint Zero entries created
-SELECT 
-  c.name as client_name,
-  s.name as sprint_name,
-  s.start_date,
-  s.end_date,
-  s.status
-FROM sprints s
-JOIN clients c ON s.client_id = c.id
-ORDER BY c.name;
-
 -- ============================================================================
 -- RESET COMPLETE
 -- ============================================================================
@@ -166,8 +139,8 @@ ORDER BY c.name;
 -- ✓ All old sprints, sprint_tasks, and tasks moved to archive tables
 -- ✓ All time_entries moved to archive (daily_reports cleaned)
 -- ✓ All main tables cleared (clean slate)
--- ✓ "Sprint Zero" created for each active client
 -- ✓ Users and clients are UNTOUCHED
+-- ✓ No sprints created (teams will auto-create via cron on Saturday)
 --
 -- Archive tables for reference/audit trail:
 -- - sprints_archive
