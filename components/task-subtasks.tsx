@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Check, AlertCircle, Clock } from "lucide-react"
+import { Plus, Trash2, Check, AlertCircle, Clock, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Subtask {
@@ -125,7 +125,13 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
   }
 
   const handleToggleStatus = async (subtaskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "done" ? "pending" : "done"
+    // Cycle through states: pending → in_progress → done → pending
+    const statusCycle = {
+      "pending": "in_progress",
+      "in_progress": "done",
+      "done": "pending"
+    }
+    const newStatus = statusCycle[currentStatus as keyof typeof statusCycle] || "pending"
 
     try {
       const token = localStorage.getItem("sessionToken")
@@ -223,44 +229,66 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
 
       {/* Add Subtask Form */}
       {showAddForm && (
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+        <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-white border border-blue-200 rounded-lg space-y-3">
+          {/* Header with close button */}
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold text-gray-900">Add New Subtask</h4>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all"
+              title="Close (Esc)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <input
             type="text"
             value={newSubtaskTitle}
             onChange={(e) => setNewSubtaskTitle(e.target.value)}
             placeholder="Subtask title..."
-            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleAddSubtask()
+              if (e.key === "Escape") setShowAddForm(false)
+            }}
+            autoFocus
           />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="date"
-              value={selectedDueDate}
-              onChange={(e) => setSelectedDueDate(e.target.value)}
-              className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <select
-              value={selectedAssignee}
-              onChange={(e) => setSelectedAssignee(e.target.value)}
-              className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Unassigned</option>
-              {teamMembers.map(member => (
-                <option key={member.id} value={member.id}>{member.full_name}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Due Date</label>
+              <input
+                type="date"
+                value={selectedDueDate}
+                onChange={(e) => setSelectedDueDate(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Assign To</label>
+              <select
+                value={selectedAssignee}
+                onChange={(e) => setSelectedAssignee(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Unassigned</option>
+                {teamMembers.map(member => (
+                  <option key={member.id} value={member.id}>{member.full_name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2">
             <button
               onClick={handleAddSubtask}
               disabled={!newSubtaskTitle.trim() || isSubmitting}
-              className="flex-1 px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex-1 px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              Add Subtask
+              {isSubmitting ? "Creating..." : "Create Subtask"}
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="flex-1 px-2 py-1 text-xs font-medium bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              className="flex-1 px-3 py-2 text-sm font-semibold bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Cancel
             </button>
@@ -275,55 +303,99 @@ export function TaskSubtasks({ taskId, mainTaskStatus, onStatusBlocked }: Subtas
         <p className="text-xs text-gray-500 text-center py-4">No subtasks yet</p>
       ) : (
         <div className="space-y-2">
-          {subtasks.map(subtask => (
-            <div
-              key={subtask.id}
-              className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 transition-colors group"
-            >
-              {/* Status Checkbox */}
-              <button
-                onClick={() => handleToggleStatus(subtask.id, subtask.status)}
-                className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all hover:scale-110"
-                style={{
-                  borderColor: subtask.status === "done" ? "#10b981" : "#d1d5db",
-                  backgroundColor: subtask.status === "done" ? "#10b981" : "transparent"
-                }}
+          {subtasks.map(subtask => {
+            // Helper to get status color
+            const statusColor = subtask.status === "done" ? "bg-green-100 border-green-300" : 
+                               subtask.status === "in_progress" ? "bg-blue-100 border-blue-300" : 
+                               "bg-white border-gray-200"
+            
+            const stripeColor = subtask.status === "done" ? "bg-green-500" :
+                               subtask.status === "in_progress" ? "bg-blue-500" :
+                               "bg-gray-400"
+            
+            // Check if due date is overdue
+            const isOverdue = subtask.due_date && new Date(subtask.due_date) < new Date() && subtask.status !== "done"
+            
+            return (
+              <div
+                key={subtask.id}
+                className={cn(
+                  "border-l-4 border rounded-r-lg p-3 transition-all hover:shadow-md",
+                  statusColor,
+                  "group"
+                )}
+                style={{ borderLeftColor: stripeColor.split("-")[1].includes("500") ? stripeColor : undefined }}
               >
-                {subtask.status === "done" && <Check className="w-3 h-3 text-white" />}
-              </button>
+                <div className="flex items-start justify-between gap-2">
+                  {/* Checkbox + Title */}
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    {/* Status Checkbox */}
+                    <button
+                      onClick={() => handleToggleStatus(subtask.id, subtask.status)}
+                      className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all hover:scale-110 mt-0.5"
+                      style={{
+                        borderColor: subtask.status === "done" ? "#10b981" : 
+                                    subtask.status === "in_progress" ? "#3b82f6" :
+                                    "#d1d5db",
+                        backgroundColor: subtask.status === "done" ? "#10b981" : 
+                                        subtask.status === "in_progress" ? "#3b82f6" :
+                                        "transparent"
+                      }}
+                      title="Click to cycle status: To Do → In Progress → Done"
+                    >
+                      {subtask.status === "done" && <Check className="w-3 h-3 text-white" />}
+                      {subtask.status === "in_progress" && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    </button>
 
-              {/* Subtask Info */}
-              <div className="flex-1 min-w-0">
-                <p className={cn(
-                  "text-xs font-medium",
-                  subtask.status === "done" ? "text-gray-400 line-through" : "text-gray-900"
-                )}>
-                  {subtask.title}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  {subtask.assignee && (
-                    <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                      {subtask.assignee.full_name}
-                    </span>
-                  )}
-                  {subtask.due_date && (
-                    <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                      <Clock className="w-3 h-3" />
-                      {new Date(subtask.due_date).toLocaleDateString()}
-                    </span>
-                  )}
+                    {/* Title and Metadata */}
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "text-sm font-medium leading-tight",
+                        subtask.status === "done" ? "text-gray-400 line-through" : "text-gray-900"
+                      )}>
+                        {subtask.title}
+                      </p>
+                      
+                      {/* Assignee + Due Date Row */}
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        {/* Assignee */}
+                        {subtask.assignee ? (
+                          <div className="flex items-center gap-1 bg-white rounded px-2 py-1 text-xs">
+                            <div className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
+                              {subtask.assignee.full_name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-gray-700">{subtask.assignee.full_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500 italic">Unassigned</span>
+                        )}
+
+                        {/* Due Date */}
+                        {subtask.due_date && (
+                          <span className={cn(
+                            "text-xs flex items-center gap-1 px-2 py-1 rounded",
+                            isOverdue ? "bg-red-100 text-red-700 font-semibold" : "text-gray-600"
+                          )}>
+                            <Clock className="w-3 h-3" />
+                            {new Date(subtask.due_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => handleDeleteSubtask(subtask.id)}
+                    className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1 text-gray-400 hover:text-red-600 transition-all"
+                    title="Delete subtask"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-
-              {/* Delete Button */}
-              <button
-                onClick={() => handleDeleteSubtask(subtask.id)}
-                className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-1 text-gray-400 hover:text-red-600 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
