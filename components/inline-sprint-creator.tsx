@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, X } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { Plus, X, Sparkles } from "lucide-react"
+import { generateSprintName, getNextSequenceNumber, getNextWeekMonday, getNextWeekSaturday } from "@/lib/sprint-naming"
 
 interface InlineSprintCreatorProps {
   clientId?: string
+  clientName?: string
   sprints: Array<{ id: string; name: string; start_date: string; end_date: string; status: string }>
   selectedSprintId?: string
   onSprintChange: (sprintId: string | null) => void
@@ -13,6 +15,7 @@ interface InlineSprintCreatorProps {
 
 export function InlineSprintCreator({
   clientId,
+  clientName = "Client",
   sprints,
   selectedSprintId,
   onSprintChange,
@@ -20,11 +23,30 @@ export function InlineSprintCreator({
 }: InlineSprintCreatorProps) {
   const [showForm, setShowForm] = useState(false)
   const [sprintName, setSprintName] = useState("")
+  const [useAutoName, setUseAutoName] = useState(true)
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0])
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Calculate auto-generated sprint name
+  const autoSprintName = useMemo(() => {
+    if (!clientName) return ""
+    const nextSeq = getNextSequenceNumber(sprints)
+    const nextMonday = getNextWeekMonday()
+    const nextSaturday = getNextWeekSaturday()
+    return generateSprintName(clientName, nextSeq, nextMonday, nextSaturday)
+  }, [clientName, sprints])
+
+  // Auto-update form when toggling auto-name
+  useEffect(() => {
+    if (useAutoName) {
+      setSprintName(autoSprintName)
+      setStartDate(getNextWeekMonday().toISOString().split("T")[0])
+      setEndDate(getNextWeekSaturday().toISOString().split("T")[0])
+    }
+  }, [useAutoName, autoSprintName])
 
   const handleCreateSprint = async () => {
     if (!sprintName.trim() || !clientId) return
@@ -114,15 +136,37 @@ export function InlineSprintCreator({
         </button>
       ) : (
         <div className="p-4 border border-[#E5E5E7] rounded-lg bg-white space-y-3">
+          {/* Auto-naming toggle with preview */}
+          <div className="flex items-center gap-2 p-2 bg-[#F5F5F7] rounded-lg">
+            <input
+              type="checkbox"
+              id="auto-name"
+              checked={useAutoName}
+              onChange={(e) => setUseAutoName(e.target.checked)}
+              className="w-4 h-4 rounded cursor-pointer"
+            />
+            <label htmlFor="auto-name" className="flex items-center gap-2 cursor-pointer flex-1">
+              <Sparkles className="w-4 h-4 text-[#007AFF]" />
+              <span className="text-xs font-medium text-[#1D1D1F]">Auto-generate sprint name</span>
+            </label>
+          </div>
+
+          {/* Sprint Name Input */}
           <div>
             <label className="block text-xs font-medium text-[#1D1D1F] mb-1">Sprint Name</label>
-            <input
-              type="text"
-              value={sprintName}
-              onChange={(e) => setSprintName(e.target.value)}
-              placeholder="e.g., Q1 Planning"
-              className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
-            />
+            {useAutoName ? (
+              <div className="px-3 py-2 text-sm bg-[#F5F5F7] border border-[#E5E5E7] rounded text-[#1D1D1F] font-medium">
+                {sprintName || autoSprintName}
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={sprintName}
+                onChange={(e) => setSprintName(e.target.value)}
+                placeholder="e.g., Sprint 1_WAR_Apr27-May3"
+                className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -132,7 +176,8 @@ export function InlineSprintCreator({
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
+                disabled={useAutoName}
+                className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF] disabled:bg-[#F5F5F7] disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -141,7 +186,8 @@ export function InlineSprintCreator({
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
+                disabled={useAutoName}
+                className="w-full px-3 py-2 text-sm border border-[#E5E5E7] rounded focus:outline-none focus:ring-2 focus:ring-[#007AFF] disabled:bg-[#F5F5F7] disabled:cursor-not-allowed"
               />
             </div>
           </div>
