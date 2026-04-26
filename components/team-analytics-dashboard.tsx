@@ -72,12 +72,21 @@ export function TeamAnalyticsDashboard() {
   // Copy tasks from a section to clipboard
   const handleCopyTasks = (tasks: Task[], sectionName: string) => {
     if (tasks.length === 0) return
-    const taskIds = tasks.map(t => t.task_id || t.id).join("\n")
-    navigator.clipboard.writeText(taskIds)
+    
+    // Create a formatted task list with all data EXCEPT task_id and description
+    const taskList = tasks.map(t => {
+      const lines: string[] = []
+      if (t.title) lines.push(`Title: ${t.title}`)
+      if (t.status) lines.push(`Status: ${t.status}`)
+      if (t.due_date) lines.push(`Due: ${t.due_date}`)
+      return lines.join(" | ")
+    }).join("\n")
+    
+    navigator.clipboard.writeText(taskList)
     setCopiedSection(sectionName)
     toast({
       title: "Copied!",
-      description: `${tasks.length} task ID${tasks.length > 1 ? "s" : ""} copied to clipboard`,
+      description: `${tasks.length} task${tasks.length > 1 ? "s" : ""} copied to clipboard (without IDs & descriptions)`,
     })
     setTimeout(() => setCopiedSection(null), 2000)
   }
@@ -513,6 +522,7 @@ export function TeamAnalyticsDashboard() {
             }
           }}
           task={selectedTask}
+          teamMembers={teamMembers}
         />
       )}
 

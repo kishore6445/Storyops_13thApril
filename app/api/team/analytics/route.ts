@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       (users || []).map(async (user) => {
         const { data: tasks, error: tasksError } = await supabase
           .from("tasks")
-          .select("id, task_id, title, status, due_date, client_id")
+          .select("id, task_id, title, description, status, due_date, client_id, assigned_to, internal_pkr_date, client_promise_date, priority, phase, due_time, promised_time")
           .eq("assigned_to", user.id)
           .order("due_date", { ascending: true })
 
@@ -76,20 +76,29 @@ export async function GET(request: NextRequest) {
 
         const pkrPercentage = tasksArray.length > 0 ? Math.round((completed / tasksArray.length) * 100) : 0
 
-        // Map tasks with fetched task_id
-        const tasksWithIds = tasksArray.map((task) => ({
+        // Map tasks with all necessary fields
+        const tasksWithAllData = tasksArray.map((task) => ({
           id: task.id,
           title: task.title,
+          description: task.description,
           status: task.status,
           due_date: task.due_date,
+          due_time: task.due_time,
           task_id: task.task_id,
+          assigned_to: task.assigned_to,
+          internal_pkr_date: task.internal_pkr_date,
+          client_promise_date: task.client_promise_date,
+          priority: task.priority,
+          phase: task.phase,
+          promised_time: task.promised_time,
+          client_id: task.client_id
         }))
 
         return {
           id: user.id,
           full_name: user.full_name,
           email: user.email || "",
-          tasksAssigned: tasksWithIds,
+          tasksAssigned: tasksWithAllData,
           taskStats: {
             total: tasksArray.length,
             completed,
